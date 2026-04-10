@@ -50,6 +50,55 @@ const normalizeHistory = (history) => {
         .filter((entry) => ["system", "user", "assistant"].includes(entry.role) && entry.content);
 };
 
+const resolveKnowledgeUrl = (requestOrigin, payload) => {
+    const rawKnowledgeUrl = typeof payload?.knowledgeUrl === "string" ? payload.knowledgeUrl.trim() : "";
+    if (!rawKnowledgeUrl || !requestOrigin) {
+        return "";
+    }
+
+    try {
+        const knowledgeUrl = new URL(rawKnowledgeUrl);
+        if (!["http:", "https:"].includes(knowledgeUrl.protocol)) {
+            return "";
+        }
+
+        if (knowledgeUrl.origin !== requestOrigin) {
+            return "";
+        }
+
+        return knowledgeUrl.toString();
+    } catch {
+        return "";
+    }
+};
+
+const loadKnowledge = async (knowledgeUrl) => {
+    if (!knowledgeUrl) {
+        return "";
+    }
+
+    try {
+        const response = await fetch(knowledgeUrl, {
+            headers: {
+                "Accept": "text/plain",
+            },
+        });
+
+        if (!response.ok) {
+            return "";
+        }
+
+        const text = (await response.text()).trim();
+        if (!text) {
+            return "";
+        }
+
+        return text.slice(0, 12000);
+    } catch {
+        return "";
+    }
+};
+
 export default {
     async fetch(request, env) {
         const url = new URL(request.url);
@@ -137,11 +186,20 @@ export default {
             );
         }
 
+        const knowledgeUrl = resolveKnowledgeUrl(requestOrigin, payload);
+        const knowledge = await loadKnowledge(knowledgeUrl);
+
         const messages = [
             {
                 role: "system",
                 content: env.SYSTEM_PROMPT || "You are a helpful portfolio assistant."
             },
+            ...(knowledge
+                ? [{
+                    role: "system",
+                    content: `Use the following portfolio knowledge when answering. If the file conflicts with earlier chat context, prefer the file.\n\n${knowledge}`,
+                }]
+                : []),
             ...normalizeHistory(payload?.history),
             {
                 role: "user",

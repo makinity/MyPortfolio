@@ -1,0 +1,46 @@
+MakiBot Knowledge Base
+
+Owner
+- Name: Mark Vencent L. Juntilla
+- Brand: Maki Dev
+- Age: 21
+- Role: Full-stack developer
+- Nationality: Filipino
+
+How To Use This File
+- Replace this template with accurate portfolio facts.
+- Keep entries short, factual, and easy to scan.
+- Prefer plain text over long paragraphs.
+- Update this file when projects, stack, contact details, or availability change.
+
+Projects
+- Add one line per project with name, short description, stack, status, and link if available.
+
+Tech Stack
+- Languages: java, c#, python
+- Frontend: bootstrap 5, tailwind css, flowbite, react
+- Backend: node.js, fast api, laravel
+- Databases: mysql, supabase, firebase
+- Cloud / DevOps: Hostinger, cloud storage
+- Tools: Deepseek, Codex, Cursor
+
+Experience Highlights
+- Add notable achievements, internships, freelance work, or shipped systems.
+
+Availability
+- Current status: Available
+- Open to: Web Design, Web Developer, Graphic Design, Virtual Assistant
+- Preferred work type: Web Design
+- Timezone: 
+
+Contact
+- Email: juntillakingmaki@gmail.com
+- Facebook: https://www.facebook.com/facon.titan/
+- GitHub:
+- LinkedIn:
+- Portfolio: https://makinity.github.io/MyPortfolio/
+
+Answering Rules
+- Only answer with facts that are in this file, the portfolio page, or the current chat.
+- If a detail is missing, say that it is not listed.
+- Do not invent numbers, dates, or project outcomes.

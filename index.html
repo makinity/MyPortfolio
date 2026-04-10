@@ -1160,12 +1160,6 @@
             box-shadow: none;
         }
 
-        .chatbot-note {
-            padding: 0 1rem 1rem;
-            color: var(--text-secondary);
-            font-size: 0.78rem;
-        }
-
         /* Responsive */
         @media (max-width: 1024px) {
             .hero {
@@ -1748,7 +1742,6 @@
                 <i class="fas fa-paper-plane"></i>
             </button>
         </form>
-        <p class="chatbot-note">Default chat requests go to the deployed <code>workers.dev</code> URL. Use <code>window.CHATBOT_CONFIG = { apiUrl: 'http://127.0.0.1:8787/chat' }</code> only when running a local Worker with <code>wrangler dev</code>.</p>
     </aside>
 
     <button class="chatbot-launcher" id="chatbotToggle" type="button" aria-label="Open chatbot" aria-expanded="false" aria-controls="chatbotPanel">
@@ -1765,6 +1758,13 @@
                 apiUrl: 'https://portfolio-chat.makidevportfolio.workers.dev/chat',
                 assistantName: 'MakiBot',
                 ...(window.CHATBOT_CONFIG || {})
+            };
+            const resolveKnowledgeUrl = () => {
+                if (!/^https?:$/i.test(window.location.protocol)) {
+                    return '';
+                }
+
+                return new URL('ai.txt', window.location.href).href;
             };
 
             // --- Scroll Reveal Animation ---
@@ -1913,7 +1913,8 @@
                     },
                     body: JSON.stringify({
                         message,
-                        history: chatbotHistory.slice(-10)
+                        history: chatbotHistory.slice(-10),
+                        knowledgeUrl: resolveKnowledgeUrl()
                     })
                 });
 
