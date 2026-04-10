@@ -6,6 +6,7 @@ Owner
 - Age: 21
 - Role: Full-stack developer
 - Nationality: Filipino
+- University: Davao Del Sur State College
 
 How To Use This File
 - Replace this template with accurate portfolio facts.
@@ -22,7 +23,7 @@ Tech Stack
 - Backend: node.js, fast api, laravel
 - Databases: mysql, supabase, firebase
 - Cloud / DevOps: Hostinger, cloud storage
-- Tools: Deepseek, Codex, Cursor
+- Tools: Deepseek, Codex, Cursor, VSCode, Canva
 
 Experience Highlights
 - Add notable achievements, internships, freelance work, or shipped systems.
@@ -31,14 +32,12 @@ Availability
 - Current status: Available
 - Open to: Web Design, Web Developer, Graphic Design, Virtual Assistant
 - Preferred work type: Web Design
-- Timezone: 
+- Timezone: Philippine Standard Time (PST, UTC+8)
 
 Contact
 - Email: juntillakingmaki@gmail.com
 - Facebook: https://www.facebook.com/facon.titan/
-- GitHub:
-- LinkedIn:
-- Portfolio: https://makinity.github.io/MyPortfolio/
+- GitHub: https://github.com/makinity
 
 Answering Rules
 - Only answer with facts that are in this file, the portfolio page, or the current chat.
