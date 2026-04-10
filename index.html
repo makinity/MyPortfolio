@@ -4,6 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Maki Dev | Mark Vencent L. Juntilla</title>
+    <script>
+        (function() {
+            if (window.location.protocol === 'file:') {
+                window.__SITE_BASE_PATH__ = '';
+                return;
+            }
+
+            const segments = window.location.pathname.split('/').filter(Boolean);
+            const isGitHubProjectPage = /\.github\.io$/i.test(window.location.hostname)
+                && segments.length > 0
+                && !segments[0].includes('.');
+            const basePath = isGitHubProjectPage ? `/${segments[0]}/` : '/';
+            const baseEl = document.createElement('base');
+
+            baseEl.href = new URL(basePath, window.location.origin).href;
+            document.head.appendChild(baseEl);
+            window.__SITE_BASE_PATH__ = basePath;
+        })();
+    </script>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1759,12 +1778,17 @@
                 assistantName: 'MakiBot',
                 ...(window.CHATBOT_CONFIG || {})
             };
-            const resolveKnowledgeUrl = () => {
+            const getSiteBaseUrl = () => {
                 if (!/^https?:$/i.test(window.location.protocol)) {
                     return '';
                 }
 
-                return new URL('ai.txt', window.location.href).href;
+                const basePath = window.__SITE_BASE_PATH__ || '/';
+                return new URL(basePath, window.location.origin).href;
+            };
+            const resolveKnowledgeUrl = () => {
+                const siteBaseUrl = getSiteBaseUrl();
+                return siteBaseUrl ? new URL('ai.txt', siteBaseUrl).href : '';
             };
 
             // --- Scroll Reveal Animation ---
