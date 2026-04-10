@@ -1885,7 +1885,7 @@
             };
             const isChatbotConfigured = () => Boolean(CHATBOT_CONFIG.apiUrl && /^https?:\/\//.test(CHATBOT_CONFIG.apiUrl));
             const getChatbotSetupReply = () => {
-                return 'Chatbot UI is ready, but the Groq backend URL is not configured yet. Deploy the Cloudflare Worker, then set CHATBOT_CONFIG.apiUrl in resources/index.html to your Worker /chat URL.';
+                return 'Chatbot UI is ready, but the Groq backend URL is not configured yet. Deploy the Cloudflare Worker, then set CHATBOT_CONFIG.apiUrl in index.html to your Worker /chat URL.';
             };
             const describeChatbotFetchError = (error) => {
                 const apiUrl = CHATBOT_CONFIG.apiUrl || '';

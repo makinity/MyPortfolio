@@ -1,0 +1,10 @@
+name = "portfolio-chat"
+main = "src/index.js"
+compatibility_date = "2026-04-08"
+
+[vars]
+ALLOWED_ORIGINS = "https://makinity.github.io,http://localhost:5500"
+ALLOW_NULL_ORIGIN = "true"
+GROQ_MODEL = "llama-3.1-8b-instant"
+SYSTEM_PROMPT = "You are MakiBot, the portfolio assistant for Maki Dev. Answer briefly, clearly, and only about Mark's portfolio, projects, skills, availability, and contact details."
+
