@@ -43,9 +43,12 @@
     const chatbotForm = document.getElementById('chatbotForm');
     const chatbotInput = document.getElementById('chatbotInput');
     const chatbotSend = document.getElementById('chatbotSend');
+    const contactForm = document.getElementById('contactForm');
+    const contactFormStatus = document.getElementById('contactFormStatus');
     const anchorGap = 0;
     let chatbotHistory = [];
     let isChatRequestPending = false;
+    let isContactRequestPending = false;
 
     const setDrawerState = (isOpen) => {
         body.classList.toggle('drawer-open', isOpen);
@@ -194,6 +197,21 @@
         }
     };
     const isChatbotConfigured = () => Boolean(CHATBOT_CONFIG.apiUrl && /^https?:\/\//.test(CHATBOT_CONFIG.apiUrl));
+    const resolveWorkerEndpoint = (path) => {
+        if (!CHATBOT_CONFIG.apiUrl) {
+            return '';
+        }
+
+        try {
+            const apiUrl = new URL(CHATBOT_CONFIG.apiUrl);
+            apiUrl.pathname = path;
+            apiUrl.search = '';
+            apiUrl.hash = '';
+            return apiUrl.toString();
+        } catch {
+            return '';
+        }
+    };
     const getChatbotSetupReply = () => {
         return 'Chatbot UI is ready, but the Groq backend URL is not configured yet. Deploy the Cloudflare Worker, then set CHATBOT_CONFIG.apiUrl in index.html to your Worker /chat URL.';
     };
@@ -210,6 +228,24 @@
         }
 
         return 'Something went wrong while contacting the chatbot.';
+    };
+    const setContactFormStatus = (message, state = '') => {
+        if (!contactFormStatus) return;
+        contactFormStatus.textContent = message;
+        contactFormStatus.classList.remove('is-success', 'is-error');
+        if (state) {
+            contactFormStatus.classList.add(state);
+        }
+    };
+    const setContactFormDisabled = (isDisabled) => {
+        isContactRequestPending = isDisabled;
+        if (!contactForm) return;
+
+        Array.from(contactForm.elements).forEach((element) => {
+            if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement || element instanceof HTMLButtonElement) {
+                element.disabled = isDisabled;
+            }
+        });
     };
     const sendChatMessage = async (message) => {
         if (!isChatbotConfigured()) {
@@ -236,6 +272,34 @@
         return typeof data.reply === 'string' && data.reply.trim()
             ? data.reply.trim()
             : 'I could not generate a reply just now.';
+    };
+    const sendContactMessage = async ({ name, email, message, website }) => {
+        const contactApiUrl = resolveWorkerEndpoint('/contact');
+        if (!contactApiUrl) {
+            throw new Error('Contact service is not configured.');
+        }
+
+        const response = await fetch(contactApiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                name,
+                email,
+                message,
+                website
+            })
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(data.error || 'Unable to send your message right now.');
+        }
+
+        return typeof data.message === 'string' && data.message.trim()
+            ? data.message.trim()
+            : 'Message sent successfully.';
     };
 
     if (menuToggle) {
@@ -317,6 +381,40 @@
                 if (chatbotInput) {
                     chatbotInput.focus();
                 }
+            }
+        });
+    }
+
+    if (contactForm) {
+        contactForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            if (isContactRequestPending) return;
+
+            const formData = new FormData(contactForm);
+            const name = String(formData.get('name') || '').trim();
+            const email = String(formData.get('email') || '').trim();
+            const message = String(formData.get('message') || '').trim();
+            const website = String(formData.get('website') || '').trim();
+
+            if (!name || !email || !message) {
+                setContactFormStatus('Please complete all fields before sending.', 'is-error');
+                return;
+            }
+
+            setContactFormStatus('');
+            setContactFormDisabled(true);
+
+            try {
+                const result = await sendContactMessage({ name, email, message, website });
+                contactForm.reset();
+                setContactFormStatus(result, 'is-success');
+            } catch (error) {
+                setContactFormStatus(
+                    error instanceof Error ? error.message : 'Unable to send your message right now.',
+                    'is-error'
+                );
+            } finally {
+                setContactFormDisabled(false);
             }
         });
     }

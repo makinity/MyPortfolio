@@ -45,7 +45,9 @@
             </ul>
         </div>
         <div class="dev-profile desktop-profile">
-            <div class="avatar">MV</div>
+            <div class="avatar">
+                <img src="assets/images/profile/1.jpg" alt="Mark Vencent profile photo" loading="eager" decoding="async">
+            </div>
             <span class="name-tag">Mark Vencent</span>
         </div>
         <button class="menu-toggle" id="menuToggle" type="button" aria-expanded="false" aria-controls="mobileDrawer" aria-label="Open navigation menu">
@@ -75,7 +77,9 @@
             </ul>
         </div>
         <div class="dev-profile drawer-profile">
-            <div class="avatar">MV</div>
+            <div class="avatar">
+                <img src="assets/images/profile/1.jpg" alt="Mark Vencent profile photo" loading="lazy" decoding="async">
+            </div>
             <span class="name-tag">Mark Vencent</span>
         </div>
     </aside>
@@ -177,86 +181,56 @@
             </div>
         </section>
 
-        <!-- Gallery Section - About Mark -->
+        <!-- Gallery Section -->
         <section id="gallery">
-            <h2>Gallery & Side Skills</h2>
+            <h2>Gallery</h2>
             <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 1.1rem;">
-                Beyond coding, I bring creative and organizational skills to the table
+                A few snapshots from work, school, and everyday life.
             </p>
             <div class="gallery-wrapper">
                 <div class="gallery-slider" id="gallerySlider">
                     <!-- Gallery items -->
-                    <div class="gallery-card">
+                    <figure class="gallery-card">
                         <div class="gallery-image has-image">
-                            <i class="fas fa-plug"></i>
-                            <span class="gallery-tag">API</span>
-                            <img src="assets/images/gallery/1.jpg" alt="API Integration sample" loading="lazy" decoding="async">
+                            <img src="assets/images/gallery/1.jpg" alt="Presentation moment" loading="lazy" decoding="async">
                         </div>
-                        <div class="gallery-caption">
-                            <h3><i class="fas fa-code-branch"></i> API Integration</h3>
-                            <p>Connecting apps with Stripe, PayPal, Google Maps, Twilio, and various third-party services.</p>
-                        </div>
-                    </div>
+                        <figcaption class="gallery-caption">Presentation moment during a class activity.</figcaption>
+                    </figure>
                     
-                    <div class="gallery-card">
+                    <figure class="gallery-card">
                         <div class="gallery-image has-image">
-                            <i class="fas fa-credit-card"></i>
-                            <span class="gallery-tag">Payments</span>
-                            <img src="assets/images/gallery/2.jpg" alt="Payment gateway sample" loading="lazy" decoding="async">
+                            <img src="assets/images/gallery/2.jpg" alt="Late-night work session" loading="lazy" decoding="async">
                         </div>
-                        <div class="gallery-caption">
-                            <h3><i class="fab fa-stripe"></i> Payment Gateways</h3>
-                            <p>Implementing secure payment processing with Stripe, PayPal, and local payment providers.</p>
-                        </div>
-                    </div>
+                        <figcaption class="gallery-caption">A quick snapshot from a late-night work session.</figcaption>
+                    </figure>
                     
-                    <div class="gallery-card">
+                    <figure class="gallery-card">
                         <div class="gallery-image has-image">
-                            <i class="fas fa-file-powerpoint"></i>
-                            <span class="gallery-tag">Design</span>
-                            <img src="assets/images/gallery/3.jpg" alt="PowerPoint presentation sample" loading="lazy" decoding="async">
+                            <img src="assets/images/gallery/3.jpg" alt="Portrait photo" loading="lazy" decoding="async">
                         </div>
-                        <div class="gallery-caption">
-                            <h3><i class="fas fa-presentation"></i> PowerPoint Pro</h3>
-                            <p>Creating professional, engaging presentations for business, education, and pitching ideas.</p>
-                        </div>
-                    </div>
+                        <figcaption class="gallery-caption">A simple portrait from one of my recent shoots.</figcaption>
+                    </figure>
                     
-                    <div class="gallery-card">
+                    <figure class="gallery-card">
                         <div class="gallery-image has-image">
-                            <i class="fas fa-paint-brush"></i>
-                            <span class="gallery-tag">Canva</span>
-                            <img src="assets/images/gallery/4.jpg" alt="Canva social media design sample" loading="lazy" decoding="async">
+                            <img src="assets/images/gallery/4.jpg" alt="Group photo" loading="lazy" decoding="async">
                         </div>
-                        <div class="gallery-caption">
-                            <h3><i class="fas fa-palette"></i> Social Media Design</h3>
-                            <p>Designing eye-catching posters, flyers, and social media content using Canva.</p>
-                        </div>
-                    </div>
+                        <figcaption class="gallery-caption">Group photo after a presentation session.</figcaption>
+                    </figure>
                     
-                    <div class="gallery-card">
+                    <figure class="gallery-card">
                         <div class="gallery-image has-image">
-                            <i class="fas fa-table"></i>
-                            <span class="gallery-tag">Data</span>
-                            <img src="assets/images/gallery/5.jpg" alt="Data entry work sample" loading="lazy" decoding="async">
+                            <img src="assets/images/gallery/5.jpg" alt="Design and creative work" loading="lazy" decoding="async">
                         </div>
-                        <div class="gallery-caption">
-                            <h3><i class="fas fa-database"></i> Data Entry Expert</h3>
-                            <p>Fast, accurate data entry with attention to detail. Experienced with Excel and Google Sheets.</p>
-                        </div>
-                    </div>
+                        <figcaption class="gallery-caption">Creative work and design practice in progress.</figcaption>
+                    </figure>
                     
-                    <div class="gallery-card">
+                    <figure class="gallery-card">
                         <div class="gallery-image has-image">
-                            <i class="fas fa-dumbbell"></i>
-                            <span class="gallery-tag">Fitness</span>
-                            <img src="assets/images/gallery/6.jpg" alt="Fitness and gym lifestyle sample" loading="lazy" decoding="async">
+                            <img src="assets/images/gallery/6.jpg" alt="Fitness routine" loading="lazy" decoding="async">
                         </div>
-                        <div class="gallery-caption">
-                            <h3><i class="fas fa-heart"></i> Gym Life</h3>
-                            <p>Dedicated to fitness and healthy lifestyle. Discipline from training carries over to my work ethic.</p>
-                        </div>
-                    </div>
+                        <figcaption class="gallery-caption">A snapshot from my fitness routine and gym life.</figcaption>
+                    </figure>
                 </div>
             </div>
             <p style="color: var(--text-secondary); margin-top: 1rem; text-align: center;">
@@ -371,17 +345,23 @@
                         <span>Sulop, Davao del Sur, Philippines</span>
                     </div>
                     <div class="social-links">
-                        <a href="https://github.com/makinity"><i class="fab fa-github"></i></a>
-                        <a href="#"><i class="fab fa-linkedin"></i></a>
-                        <a href="https://www.facebook.com/facon.titan/"><i class="fab fa-facebook"></i></a>
+                        <a href="https://github.com/makinity" target="_blank"><i class="fab fa-github"></i></a>
+                        <a href="#" target="_blank"><i class="fab fa-linkedin"></i></a>
+                        <a href="https://www.facebook.com/facon.titan/" target="_blank"><i class="fab fa-facebook"></i></a>
                     </div>
                 </div>
-                <div class="contact-form">
-                    <input type="text" placeholder="Your Name">
-                    <input type="email" placeholder="Email Address">
-                    <textarea rows="4" placeholder="Message..."></textarea>
-                    <button class="btn btn-primary" style="align-self: flex-start;">Send Message</button>
-                </div>
+                <form class="contact-form" id="contactForm">
+                    <label class="sr-only" for="contactName">Your Name</label>
+                    <input id="contactName" name="name" type="text" placeholder="Your Name" autocomplete="name" required>
+                    <label class="sr-only" for="contactEmail">Email Address</label>
+                    <input id="contactEmail" name="email" type="email" placeholder="Email Address" autocomplete="email" required>
+                    <label class="sr-only" for="contactMessage">Message</label>
+                    <textarea id="contactMessage" name="message" rows="4" placeholder="Message..." required></textarea>
+                    <label class="sr-only" for="contactWebsite">Website</label>
+                    <input id="contactWebsite" name="website" class="sr-only" type="text" tabindex="-1" autocomplete="off">
+                    <button class="btn btn-primary" id="contactSubmit" type="submit" style="align-self: flex-start;">Send Message</button>
+                    <p class="contact-form-status" id="contactFormStatus" aria-live="polite"></p>
+                </form>
             </div>
         </section>
     </main>

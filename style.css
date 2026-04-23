@@ -127,6 +127,14 @@ nav {
     font-weight: bold;
     border: 2px solid var(--blue-accent);
     box-shadow: var(--border-glow);
+    overflow: hidden;
+}
+
+.dev-profile .avatar img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
 }
 
 .dev-profile .name-tag {
@@ -597,12 +605,14 @@ h2::after {
 }
 
 .gallery-card {
-    flex: 0 0 300px;
+    flex: 0 0 320px;
     background: var(--bg-secondary);
     border-radius: 20px;
     overflow: hidden;
     border: 1px solid rgba(0, 168, 255, 0.2);
     transition: all 0.3s;
+    display: flex;
+    flex-direction: column;
 }
 
 .gallery-card:hover {
@@ -613,7 +623,7 @@ h2::after {
 
 .gallery-image {
     width: 100%;
-    height: 250px;
+    height: 300px;
     background: linear-gradient(135deg, rgba(30, 58, 138, 0.5), rgba(0, 168, 255, 0.2));
     display: flex;
     align-items: center;
@@ -644,15 +654,20 @@ h2::after {
 }
 
 .gallery-caption {
-    padding: 1.5rem;
-}
-
-.gallery-caption h3 {
-    color: var(--blue-accent);
-    margin-bottom: 0.5rem;
+    padding: 0.95rem 1rem 1.05rem;
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+    line-height: 1.5;
+    background: linear-gradient(180deg, rgba(21, 26, 34, 0.96), rgba(15, 19, 28, 0.98));
+    border-top: 1px solid rgba(0, 168, 255, 0.12);
+    min-height: 78px;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+}
+
+.gallery-caption p,
+.gallery-caption h3 {
+    margin: 0;
 }
 
 .gallery-caption p {
@@ -878,6 +893,26 @@ h2::after {
     outline: none;
     border-color: var(--blue-primary);
     box-shadow: 0 0 0 3px rgba(0, 168, 255, 0.1);
+}
+
+.contact-form button:disabled {
+    opacity: 0.7;
+    cursor: progress;
+    box-shadow: none;
+}
+
+.contact-form-status {
+    min-height: 1.4rem;
+    font-size: 0.92rem;
+    color: var(--text-secondary);
+}
+
+.contact-form-status.is-success {
+    color: #7cf29a;
+}
+
+.contact-form-status.is-error {
+    color: #ff8b8b;
 }
 
 /* Footer */
