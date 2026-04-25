@@ -197,21 +197,6 @@
         }
     };
     const isChatbotConfigured = () => Boolean(CHATBOT_CONFIG.apiUrl && /^https?:\/\//.test(CHATBOT_CONFIG.apiUrl));
-    const resolveWorkerEndpoint = (path) => {
-        if (!CHATBOT_CONFIG.apiUrl) {
-            return '';
-        }
-
-        try {
-            const apiUrl = new URL(CHATBOT_CONFIG.apiUrl);
-            apiUrl.pathname = path;
-            apiUrl.search = '';
-            apiUrl.hash = '';
-            return apiUrl.toString();
-        } catch {
-            return '';
-        }
-    };
     const getChatbotSetupReply = () => {
         return 'Chatbot UI is ready, but the Groq backend URL is not configured yet. Deploy the Cloudflare Worker, then set CHATBOT_CONFIG.apiUrl in index.html to your Worker /chat URL.';
     };
@@ -273,33 +258,32 @@
             ? data.reply.trim()
             : 'I could not generate a reply just now.';
     };
-    const sendContactMessage = async ({ name, email, message, referralCode }) => {
-        const contactApiUrl = resolveWorkerEndpoint('/contact');
-        if (!contactApiUrl) {
-            throw new Error('Contact service is not configured.');
+    const sendContactMessage = async (formData) => {
+        const accessKey = String(formData.get('access_key') || '').trim();
+        if (!accessKey || accessKey === 'YOUR_WEB3FORMS_ACCESS_KEY') {
+            throw new Error('Set your Web3Forms access key in the hidden access_key field first.');
         }
 
-        const response = await fetch(contactApiUrl, {
+        const response = await fetch('https://api.web3forms.com/submit', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
             },
-            body: JSON.stringify({
-                name,
-                email,
-                message,
-                referralCode
-            })
+            body: JSON.stringify(Object.fromEntries(formData))
         });
 
         const data = await response.json().catch(() => ({}));
-        if (!response.ok) {
-            throw new Error(data.error || 'Unable to send your message right now.');
+        const responseMessage =
+            (typeof data.message === 'string' && data.message.trim())
+            || (typeof data?.body?.message === 'string' && data.body.message.trim())
+            || '';
+
+        if (!response.ok || data.success === false) {
+            throw new Error(responseMessage || 'Unable to send your message right now.');
         }
 
-        return typeof data.message === 'string' && data.message.trim()
-            ? data.message.trim()
-            : 'Message sent successfully.';
+        return responseMessage || 'Message sent successfully.';
     };
 
     if (menuToggle) {
@@ -394,7 +378,6 @@
             const name = String(formData.get('name') || '').trim();
             const email = String(formData.get('email') || '').trim();
             const message = String(formData.get('message') || '').trim();
-            const referralCode = String(formData.get('referralCode') || '').trim();
 
             if (!name || !email || !message) {
                 setContactFormStatus('Please complete all fields before sending.', 'is-error');
@@ -405,7 +388,7 @@
             setContactFormDisabled(true);
 
             try {
-                const result = await sendContactMessage({ name, email, message, referralCode });
+                const result = await sendContactMessage(formData);
                 contactForm.reset();
                 setContactFormStatus(result, 'is-success');
             } catch (error) {

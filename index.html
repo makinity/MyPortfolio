@@ -369,14 +369,16 @@
                     </div>
                 </div>
                 <form class="contact-form" id="contactForm">
+                    <input type="hidden" name="access_key" value="YOUR_WEB3FORMS_ACCESS_KEY">
+                    <input type="hidden" name="subject" value="New portfolio contact form submission">
+                    <input type="hidden" name="from_name" value="Maki Dev Portfolio">
                     <label class="sr-only" for="contactName">Your Name</label>
                     <input id="contactName" name="name" type="text" placeholder="Your Name" autocomplete="name" required>
                     <label class="sr-only" for="contactEmail">Email Address</label>
                     <input id="contactEmail" name="email" type="email" placeholder="Email Address" autocomplete="email" required>
                     <label class="sr-only" for="contactMessage">Message</label>
                     <textarea id="contactMessage" name="message" rows="4" placeholder="Message..." required></textarea>
-                    <label class="sr-only" for="contactReferralCode">Referral Code</label>
-                    <input id="contactReferralCode" name="referralCode" class="sr-only" type="text" tabindex="-1" autocomplete="one-time-code" aria-hidden="true">
+                    <input id="contactBotcheck" name="botcheck" class="contact-botcheck" type="checkbox" tabindex="-1" autocomplete="off" aria-hidden="true">
                     <button class="btn btn-primary" id="contactSubmit" type="submit" style="align-self: flex-start;">Send Message</button>
                     <p class="contact-form-status" id="contactFormStatus" aria-live="polite"></p>
                 </form>
