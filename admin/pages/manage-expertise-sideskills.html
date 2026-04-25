@@ -1,0 +1,50 @@
+<div class="page-header">
+    <h1 class="page-title">Side Skills</h1>
+    <button class="btn btn-primary" onclick="openModal('Add Side Skill', `
+        <div class='form-group'>
+            <label>Skill Name</label>
+            <input type='text' style='width: 100%; padding: 0.75rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary);' placeholder='e.g., Data Entry'>
+        </div>
+        <div class='form-group'>
+            <label>Icon Class (FontAwesome)</label>
+            <input type='text' style='width: 100%; padding: 0.75rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary);' placeholder='fas fa-table'>
+        </div>
+    `)"><i class="fas fa-plus"></i> Add Skill</button>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Skill</th>
+                    <th>Icon Class</th>
+                    <th>Sort Order</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><i class="fas fa-table" style="color: var(--text-secondary); width: 20px;"></i> Data Entry & Management</td>
+                    <td>fas fa-table</td>
+                    <td>1</td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="btn-icon delete" title="Delete"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td><i class="fas fa-file-powerpoint" style="color: var(--text-secondary); width: 20px;"></i> PowerPoint Presentations</td>
+                    <td>fas fa-file-powerpoint</td>
+                    <td>2</td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="btn-icon delete" title="Delete"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

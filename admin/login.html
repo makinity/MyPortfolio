@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Maki Dev</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="admin-style.css">
+</head>
+
+<body class="login-body">
+    <div class="login-container">
+        <div class="login-header">
+            <h2>Maki Dev</h2>
+            <p>Admin Control Panel</p>
+        </div>
+        <form id="loginForm" class="login-form">
+            <div class="form-group">
+                <label for="username">Email</label>
+                <div class="input-icon">
+                    <i class="fas fa-envelope"></i>
+                    <input type="text" id="username" placeholder="admin@makidev.com" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="input-icon">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="password" placeholder="••••••••" required>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary login-btn">
+                <i class="fas fa-sign-in-alt"></i> Login
+            </button>
+            <div id="loginMessage" class="login-message"></div>
+        </form>
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script>
+
+        const loginForm = document.getElementById('loginForm');
+        const btn = document.querySelector('.login-btn');
+        const msg = document.getElementById('loginMessage');
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Authenticating...';
+            msg.textContent = '';
+
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) {
+                msg.textContent = 'Login failed – please check your credentials.';
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+            } else {
+                // Successful login – Supabase stores session automatically
+                window.location.href = 'admin.html';
+            }
+        });
+    </script>
+    </script>
+</body>
+
+</html>

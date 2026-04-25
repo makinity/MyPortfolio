@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Maki Dev Admin</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="admin-style.css">
+    <script src="auth-check.js"></script>
+</head>
+<body class="admin-body">
+    <!-- Sidebar Navigation -->
+    <aside class="admin-sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2>Maki Dev</h2>
+        </div>
+        <nav class="sidebar-nav">
+            <ul id="navLinks">
+                <li><a href="#" data-page="dashboard" class="nav-link active"><i class="fas fa-home"></i> Dashboard</a></li>
+                
+                <li class="nav-header">👤 Identity</li>
+                <li><a href="#" data-page="manage-identity-profile" class="nav-link"><i class="fas fa-id-badge"></i> Profile Details</a></li>
+                <li><a href="#" data-page="manage-identity-about" class="nav-link"><i class="fas fa-address-card"></i> About Section</a></li>
+                <li><a href="#" data-page="manage-identity-socials" class="nav-link"><i class="fas fa-share-alt"></i> Social Links</a></li>
+                
+                <li class="nav-header">⚡ Expertise</li>
+                <li><a href="#" data-page="manage-expertise-tech" class="nav-link"><i class="fas fa-laptop-code"></i> Core Tech Stack</a></li>
+                <li><a href="#" data-page="manage-expertise-facts" class="nav-link"><i class="fas fa-bolt"></i> Quick Facts</a></li>
+                <li><a href="#" data-page="manage-expertise-sideskills" class="nav-link"><i class="fas fa-puzzle-piece"></i> Side Skills</a></li>
+                <li><a href="#" data-page="manage-expertise-specialty" class="nav-link"><i class="fas fa-star"></i> Specialty Banner</a></li>
+                
+                <li class="nav-header">📁 Portfolio</li>
+                <li><a href="#" data-page="manage-projects" class="nav-link"><i class="fas fa-project-diagram"></i> Projects</a></li>
+                <li><a href="#" data-page="manage-gallery" class="nav-link"><i class="fas fa-images"></i> Gallery</a></li>
+                
+                <li class="nav-header">⚙️ System</li>
+                <li><a href="#" data-page="manage-system-messages" class="nav-link"><i class="fas fa-envelope"></i> Contact Messages</a></li>
+                <li><a href="login.html" class="nav-link text-danger"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main App Shell -->
+    <div class="admin-main">
+        <!-- Topbar -->
+        <header class="admin-topbar">
+            <button class="mobile-toggle" id="mobileToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="topbar-right">
+                <a href="../index.html" target="_blank" class="btn-view-site" title="View Live Site">
+                    <i class="fas fa-external-link-alt"></i> View Site
+                </a>
+                <div class="admin-user-menu">
+                    <img src="../assets/images/profile/1.jpg" alt="Admin" class="admin-avatar">
+                    <span>Admin User</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dynamic Content Area -->
+        <main class="admin-content-area" id="adminContent">
+            <!-- Content will be loaded here via fetch() in admin-script.js -->
+            <div class="loading-state">
+                <i class="fas fa-circle-notch fa-spin"></i>
+                <p>Loading...</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- Global Modal UI -->
+    <div id="adminModal" class="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 id="modalTitle">Modal Title</h3>
+                <button class="btn-icon" id="closeModal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Dynamic Form Content Injected Here -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-sm" id="cancelModal">Cancel</button>
+                <button class="btn btn-primary btn-sm" id="saveModal">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast">Action completed successfully.</div>
+
+    <script src="admin-script.js"></script>
+</body>
+</html>
