@@ -1,3 +1,5 @@
+import { createClient } from '@supabase/supabase-js';
+
 const parseAllowedOrigins = (value = "") => {
     return value
         .split(",")
@@ -24,6 +26,13 @@ const getCorsHeaders = (requestOrigin, env) => {
             "Vary": "Origin",
         }
         : {};
+};
+
+const getSupabaseClient = (env) => {
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+        return null;
+    }
+    return createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
 };
 
 const json = (payload, init = {}) => {
@@ -363,6 +372,48 @@ const handleChatRequest = async (payload, requestOrigin, env, corsHeaders) => {
     );
 };
 
+const handlePortfolioDataRequest = async (env, corsHeaders) => {
+    const supabase = getSupabaseClient(env);
+    if (!supabase) {
+        return json(
+            { error: "Supabase client not configured" },
+            { status: 500, headers: corsHeaders }
+        );
+    }
+
+    try {
+        const [profile, projects, gallery, tech_stack, social_links, quick_facts, side_skills, specialty] = await Promise.all([
+            supabase.from('profile').select('*').limit(1).single(),
+            supabase.from('projects').select('*').order('sort_order'),
+            supabase.from('gallery').select('*').order('created_at', { ascending: false }),
+            supabase.from('tech_stack').select('*').order('sort_order'),
+            supabase.from('social_links').select('*').order('sort_order'),
+            supabase.from('quick_facts').select('*').order('sort_order'),
+            supabase.from('side_skills').select('*').order('sort_order'),
+            supabase.from('specialty').select('*').limit(1).single()
+        ]);
+
+        return json(
+            {
+                profile: profile.data,
+                projects: projects.data,
+                gallery: gallery.data,
+                tech_stack: tech_stack.data,
+                social_links: social_links.data,
+                quick_facts: quick_facts.data,
+                side_skills: side_skills.data,
+                specialty: specialty.data
+            },
+            { status: 200, headers: corsHeaders }
+        );
+    } catch (error) {
+        return json(
+            { error: "Failed to fetch portfolio data" },
+            { status: 500, headers: corsHeaders }
+        );
+    }
+};
+
 export default {
     async fetch(request, env) {
         const url = new URL(request.url);
@@ -380,7 +431,7 @@ export default {
             });
         }
 
-        if (!["/chat", "/contact"].includes(url.pathname)) {
+        if (!["/", "/chat", "/contact", "/portfolio"].includes(url.pathname)) {
             return json(
                 { error: "Not found" },
                 { status: 404, headers: corsHeaders }
@@ -388,14 +439,20 @@ export default {
         }
 
         if (request.method === "GET") {
-            return json(
-                {
-                    status: "ok",
-                    service: "portfolio-worker",
-                    message: "Worker is running. Send POST requests to /chat or /contact."
-                },
-                { status: 200, headers: corsHeaders }
-            );
+            if (url.pathname === "/") {
+                return json(
+                    {
+                        status: "ok",
+                        service: "portfolio-worker",
+                        message: "Worker is running."
+                    },
+                    { status: 200, headers: corsHeaders }
+                );
+            }
+            
+            if (url.pathname === "/portfolio") {
+                return handlePortfolioDataRequest(env, corsHeaders);
+            }
         }
 
         if (request.method !== "POST") {

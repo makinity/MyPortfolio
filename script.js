@@ -450,55 +450,172 @@
         }
     });
 
-    // --- Build Orbiting Tech Stack ---
-    const techItems = [
-        { name: 'HTML5', icon: 'fab fa-html5' },
-        { name: 'CSS3', icon: 'fab fa-css3-alt' },
-        { name: 'JavaScript', icon: 'fab fa-js' },
-        { name: 'Java', icon: 'fab fa-java' },
-        { name: 'C#', icon: 'fab fa-microsoft' },
-        { name: 'PHP', icon: 'fab fa-php' },
-        { name: 'Laravel', icon: 'fab fa-laravel' },
-        { name: '.NET', icon: 'fab fa-microsoft' },
-        { name: 'MySQL', icon: 'fas fa-database' },
-        { name: 'Supabase', icon: 'fas fa-database' },
-    ];
+    // --- Dynamic Portfolio Fetching ---
+    const fetchAndRenderPortfolio = async () => {
+        try {
+            const apiUrl = getSiteBaseUrl() 
+                ? new URL('portfolio', getSiteBaseUrl()).href 
+                : 'https://portfolio-chat.makidevportfolio.workers.dev/portfolio';
+                
+            // If running locally or from file system, point to local worker
+            const isLocal = window.location.hostname === 'localhost' || 
+                            window.location.hostname === '127.0.0.1' || 
+                            window.location.protocol === 'file:';
+                            
+            const finalUrl = isLocal ? 'http://127.0.0.1:8787/portfolio' : apiUrl;
 
-    const orbitContainer = document.querySelector('.orbit-container');
-    if (orbitContainer) {
-        techItems.forEach((tech, index) => {
-            const orbitItem = document.createElement('div');
-            orbitItem.className = 'orbit-item';
-            orbitItem.style.animationDelay = `-${(index * 20 / techItems.length).toFixed(1)}s`;
+            const response = await fetch(finalUrl);
+            if (!response.ok) throw new Error('Failed to fetch data');
             
-            orbitItem.innerHTML = `
-                <div class="tech-badge" style="animation-duration: 20s; animation-delay: -${(index * 20 / techItems.length).toFixed(1)}s;">
-                    <i class="${tech.icon}"></i>
-                    <span>${tech.name}</span>
-                </div>
-            `;
-            orbitContainer.appendChild(orbitItem);
-        });
-    }
+            const data = await response.json();
+            
+            // 1. Profile Data
+            if (data.profile) {
+                // Update Name Tags in Navbar/Drawer
+                const nameTags = document.querySelectorAll('.name-tag');
+                if (nameTags.length > 0) {
+                    // Get the first two words of the full name for the nav bar (e.g., "Marky Vencent")
+                    const shortName = data.profile.full_name.split(' ').slice(0, 2).join(' ');
+                    nameTags.forEach(tag => tag.textContent = shortName);
+                }
 
-    // --- Clone Projects for Seamless Infinite Scroll ---
-    const projectSlider = document.getElementById('projectSlider');
-    if (projectSlider) {
-        const cards = Array.from(projectSlider.children);
-        cards.forEach(card => {
-            const clone = card.cloneNode(true);
-            projectSlider.appendChild(clone);
-        });
-    }
-    
-    // --- Clone Gallery for Seamless Infinite Scroll ---
-    const gallerySlider = document.getElementById('gallerySlider');
-    if (gallerySlider) {
-        const cards = Array.from(gallerySlider.children);
-        cards.forEach(card => {
-            const clone = card.cloneNode(true);
-            gallerySlider.appendChild(clone);
-        });
-    }
-    
+                const subhead = document.getElementById('heroSubhead');
+                if (subhead) subhead.innerHTML = `${data.profile.full_name} &mdash; ${data.profile.role}`;
+                
+                const location = document.getElementById('heroLocation');
+                if (location) location.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${data.profile.location}`;
+                
+                const aboutText = document.getElementById('aboutText');
+                if (aboutText) aboutText.textContent = data.profile.about_text;
+                
+                // Advanced About Me fields (Optional, depending if they exist in DB)
+                if (data.profile.about_text_secondary) {
+                    const aboutTextSecondary = document.getElementById('aboutTextSecondary');
+                    if (aboutTextSecondary) aboutTextSecondary.textContent = data.profile.about_text_secondary;
+                }
+                
+                if (data.specialty) {
+                    const specialtyBanner = document.getElementById('specialtyBanner');
+                    if (specialtyBanner) {
+                        const mainIcon = document.getElementById('specialtyMainIcon');
+                        if (mainIcon) mainIcon.className = data.specialty.main_icon;
+                        
+                        const title = document.getElementById('specialtyTitle');
+                        if (title) title.innerHTML = `<i id="specialtySmallIcon" class="${data.specialty.small_icon}" style="margin-right: 0.5rem;"></i>${data.specialty.title}`;
+                        
+                        const desc = document.getElementById('specialtyDesc');
+                        if (desc) desc.textContent = data.specialty.description;
+                    }
+                }
+                
+                if (data.quick_facts && Array.isArray(data.quick_facts)) {
+                    const quickFactsList = document.getElementById('quickFactsList');
+                    if (quickFactsList) {
+                        quickFactsList.innerHTML = data.quick_facts.map(fact => 
+                            `<li><i class="${fact.icon}"></i> ${fact.text}</li>`
+                        ).join('');
+                    }
+                }
+                
+                if (data.side_skills && Array.isArray(data.side_skills)) {
+                    const sideSkillsList = document.getElementById('sideSkillsList');
+                    if (sideSkillsList) {
+                        sideSkillsList.innerHTML = data.side_skills.map(skill => 
+                            `<li><i class="${skill.icon}"></i> ${skill.text}</li>`
+                        ).join('');
+                    }
+                }
+                
+                // Update Hero Code Card
+                const codeCard = document.getElementById('heroCodeCard');
+                if (codeCard && data.tech_stack) {
+                    const firstName = data.profile.full_name.split(' ')[0];
+                    let stackRows = [];
+                    const stackNames = data.tech_stack.map(t => `"${t.name}"`);
+                    for (let i = 0; i < stackNames.length; i += 3) {
+                        stackRows.push(stackNames.slice(i, i + 3).join(', '));
+                    }
+                    const stackStr = stackRows.join(',\n                    ');
+                    
+                    codeCard.innerHTML = `const dev = {\n            name: "${firstName}",\n            stack: [${stackStr}],\n            apis: ["Stripe","PayPal",\n                    "Google Maps",\n                    "Twilio","SendGrid"],\n            deployments: ["Hostinger","Vercel",\n                        "Netlify", "Railway"],\n            sideSkills: ["Data Entry",\n                        "PowerPoint",\n                        "Canva Design"]\n            };`;
+                }
+            }
+            
+            // 2. Social Links
+            const socialContainer = document.getElementById('socialLinksContainer');
+            if (socialContainer && data.social_links) {
+                socialContainer.innerHTML = '';
+                data.social_links.forEach(link => {
+                    socialContainer.innerHTML += `<a href="${link.url}" target="_blank"><i class="${link.icon_class}"></i></a>`;
+                });
+            }
+            
+            // 3. Tech Stack
+            const orbitContainer = document.querySelector('.orbit-container');
+            if (orbitContainer && data.tech_stack) {
+                const existingItems = orbitContainer.querySelectorAll('.orbit-item');
+                existingItems.forEach(item => item.remove());
+                
+                data.tech_stack.forEach((tech, index) => {
+                    const orbitItem = document.createElement('div');
+                    orbitItem.className = 'orbit-item';
+                    orbitItem.style.animationDelay = `-${(index * 20 / data.tech_stack.length).toFixed(1)}s`;
+                    
+                    orbitItem.innerHTML = `
+                        <div class="tech-badge" style="animation-duration: 20s; animation-delay: -${(index * 20 / data.tech_stack.length).toFixed(1)}s;">
+                            <i class="${tech.icon_url}"></i>
+                            <span>${tech.name}</span>
+                        </div>
+                    `;
+                    orbitContainer.appendChild(orbitItem);
+                });
+            }
+            
+            // 4. Projects
+            const projectSlider = document.getElementById('projectSlider');
+            if (projectSlider && data.projects) {
+                projectSlider.innerHTML = '';
+                data.projects.forEach(project => {
+                    const tagsHtml = project.tags.map(tag => `<span class="tag">${tag}</span>`).join('');
+                    projectSlider.innerHTML += `
+                        <div class="project-card">
+                            <div class="project-image has-image">
+                                <img src="${project.image_url}" alt="${project.title}" loading="lazy" decoding="async">
+                            </div>
+                            <h3>${project.title}</h3>
+                            <p>${project.description}</p>
+                            <div class="project-tags">${tagsHtml}</div>
+                        </div>
+                    `;
+                });
+                
+                const cards = Array.from(projectSlider.children);
+                cards.forEach(card => projectSlider.appendChild(card.cloneNode(true)));
+            }
+            
+            // 5. Gallery
+            const gallerySlider = document.getElementById('gallerySlider');
+            if (gallerySlider && data.gallery) {
+                gallerySlider.innerHTML = '';
+                data.gallery.forEach(item => {
+                    gallerySlider.innerHTML += `
+                        <figure class="gallery-card">
+                            <div class="gallery-image has-image">
+                                <img src="${item.image_url}" alt="Gallery Image" loading="lazy" decoding="async">
+                            </div>
+                            <figcaption class="gallery-caption">${item.caption}</figcaption>
+                        </figure>
+                    `;
+                });
+                
+                const cards = Array.from(gallerySlider.children);
+                cards.forEach(card => gallerySlider.appendChild(card.cloneNode(true)));
+            }
+            
+        } catch (error) {
+            console.error('Error fetching portfolio data:', error);
+        }
+    };
+
+    fetchAndRenderPortfolio();
 })();
