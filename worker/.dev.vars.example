@@ -1,4 +1,3 @@
 GROQ_API_KEY=your_groq_api_key_here
-RESEND_API_KEY=re_Gmdr5mzh_7CaSoa4UK8qq23L1bCmEY1uy
+RESEND_API_KEY=your_resend_api_key_here
 CONTACT_FROM_EMAIL=Portfolio Contact <onboarding@resend.dev>
-

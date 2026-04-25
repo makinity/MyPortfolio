@@ -145,19 +145,49 @@ const sendContactEmail = async (env, payload) => {
         };
     }
 
-    return { ok: true };
+    return {
+        ok: true,
+        id: responseData?.id || "",
+    };
+};
+
+const getEmailStatus = async (env, emailId) => {
+    if (!emailId || !env.RESEND_API_KEY) {
+        return "";
+    }
+
+    try {
+        const response = await fetch(`https://api.resend.com/emails/${emailId}`, {
+            headers: {
+                "Authorization": `Bearer ${env.RESEND_API_KEY}`,
+            },
+        });
+
+        if (!response.ok) {
+            return "";
+        }
+
+        const responseData = await response.json();
+        return typeof responseData?.last_event === "string" ? responseData.last_event : "";
+    } catch {
+        return "";
+    }
 };
 
 const handleContactRequest = async (payload, env, corsHeaders) => {
     const name = typeof payload?.name === "string" ? payload.name.trim() : "";
     const email = typeof payload?.email === "string" ? payload.email.trim() : "";
     const message = typeof payload?.message === "string" ? payload.message.trim() : "";
-    const website = typeof payload?.website === "string" ? payload.website.trim() : "";
+    const referralCode = typeof payload?.referralCode === "string" ? payload.referralCode.trim() : "";
     const safeName = name.replace(/[\r\n]+/g, " ").trim();
     const safeMessageHtml = escapeHtml(message).replace(/\n/g, "<br>");
 
     // Basic honeypot field to reject simple bots.
-    if (website) {
+    if (referralCode) {
+        console.log("contact_honeypot_triggered", {
+            email,
+            origin: corsHeaders["Access-Control-Allow-Origin"] || "",
+        });
         return json(
             { message: "Message sent successfully." },
             { status: 200, headers: corsHeaders }
@@ -197,6 +227,10 @@ const handleContactRequest = async (payload, env, corsHeaders) => {
             headers: {
                 "Reply-To": email,
             },
+            tags: [
+                { name: "source", value: "portfolio-contact" },
+                { name: "recipient", value: "owner" },
+            ],
         });
     } catch {
         return json(
@@ -206,11 +240,24 @@ const handleContactRequest = async (payload, env, corsHeaders) => {
     }
 
     if (!emailResult.ok) {
+        console.log("contact_email_failed", {
+            email,
+            error: emailResult.error,
+        });
         return json(
             { error: emailResult.error },
             { status: emailResult.status, headers: corsHeaders }
         );
     }
+
+    const lastEvent = await getEmailStatus(env, emailResult.id);
+    console.log("contact_email_accepted", {
+        emailId: emailResult.id,
+        lastEvent,
+        to: env.CONTACT_TO_EMAIL,
+        from: env.CONTACT_FROM_EMAIL,
+        replyTo: email,
+    });
 
     return json(
         { message: "Message sent. I will get back to you soon." },

@@ -105,19 +105,21 @@
                 <div class="hero-visual">
                     <div class="code-card">
                         <pre><code>const dev = {
-                        name: "Mark",
-                        stack: ["HTML","CSS","JS",
-                                "Java","C#","PHP",
-                                "Laravel",".NET",
-                                "MySQL","Supabase",
-                                "Firebase"],
-                        apis: ["Stripe","PayPal",
-                                "Google Maps",
-                                "Twilio","SendGrid"],
-                        sideSkills: ["Data Entry",
-                                    "PowerPoint",
-                                    "Canva Design"]
-                        };</code></pre>
+            name: "Mark",
+            stack: ["HTML","CSS","JS",
+                    "Java","C#", "Python",
+                    "PHP","Laravel",
+                    "MySQL","Supabase",
+                    "Firebase"],
+            apis: ["Stripe","PayPal",
+                    "Google Maps",
+                    "Twilio","SendGrid"],
+            deployments: ["Hostinger","Vercel",
+                        "Netlify", "Railway"],
+            sideSkills: ["Data Entry",
+                        "PowerPoint",
+                        "Canva Design"]
+            };</code></pre>
                     </div>
                 </div>
             </div>
@@ -245,6 +247,20 @@
                         </div>
                         <figcaption class="gallery-caption">I do my classmates IOT project for free.</figcaption>
                     </figure>
+
+                    <figure class="gallery-card">
+                        <div class="gallery-image has-image">
+                            <img src="assets/images/gallery/13.jpg" alt="BoardEase" loading="lazy" decoding="async">
+                        </div>
+                        <figcaption class="gallery-caption">BoardeEase Promotional Poster Design</figcaption>
+                    </figure>
+
+                    <figure class="gallery-card">
+                        <div class="gallery-image has-image">
+                            <img src="assets/images/gallery/14.jpg" alt="Group photo" loading="lazy" decoding="async">
+                        </div>
+                        <figcaption class="gallery-caption">Broskies</figcaption>
+                    </figure>
                 </div>
             </div>
             <p style="color: var(--text-secondary); margin-top: 1rem; text-align: center;">
@@ -298,6 +314,19 @@
                     </div>
                     <div class="project-card">
                         <div class="project-image has-image">
+                            <i class="fas fa-code placeholder-icon"></i>
+                            <img src="assets/images/project/7.png" alt="Portfolio 2026 project screenshot" loading="lazy" decoding="async">
+                        </div>
+                        <h3>Maki</h3>
+                        <p>A jarvis like AI desktop Assistant for PCs. "Ironman's Jarvis AI Assistant Inspired."</p>
+                        <div class="project-tags">
+                            <span class="tag">Python</span>
+                            <span class="tag">Flask</span>
+                            <span class="tag">Numpy</span>
+                        </div>
+                    </div>
+                    <div class="project-card">
+                        <div class="project-image has-image">
                             <i class="fas fa-map-marked-alt placeholder-icon"></i>
                             <img src="assets/images/project/4.png" alt="Location Finder project screenshot" loading="lazy" decoding="async">
                         </div>
@@ -336,7 +365,7 @@
                     </div>
                     <div class="social-links">
                         <a href="https://github.com/makinity" target="_blank"><i class="fab fa-github"></i></a>
-                        <a href="#" target="_blank"><i class="fab fa-linkedin"></i></a>
+                        <a href="https://www.linkedin.com/in/mark-vencent-juntilla-366328358/" target="_blank"><i class="fab fa-linkedin"></i></a>
                         <a href="https://www.facebook.com/facon.titan/" target="_blank"><i class="fab fa-facebook"></i></a>
                     </div>
                 </div>
@@ -347,8 +376,8 @@
                     <input id="contactEmail" name="email" type="email" placeholder="Email Address" autocomplete="email" required>
                     <label class="sr-only" for="contactMessage">Message</label>
                     <textarea id="contactMessage" name="message" rows="4" placeholder="Message..." required></textarea>
-                    <label class="sr-only" for="contactWebsite">Website</label>
-                    <input id="contactWebsite" name="website" class="sr-only" type="text" tabindex="-1" autocomplete="off">
+                    <label class="sr-only" for="contactReferralCode">Referral Code</label>
+                    <input id="contactReferralCode" name="referralCode" class="sr-only" type="text" tabindex="-1" autocomplete="one-time-code" aria-hidden="true">
                     <button class="btn btn-primary" id="contactSubmit" type="submit" style="align-self: flex-start;">Send Message</button>
                     <p class="contact-form-status" id="contactFormStatus" aria-live="polite"></p>
                 </form>
@@ -358,7 +387,6 @@
 
     <footer>
         <p>&copy; 2026 Mark Vencent L. Juntilla - Maki Dev. All rights reserved.</p>
-        <p style="margin-top: 0.5rem; font-size: 0.9rem;">Built with <i class="fas fa-heart" style="color: var(--blue-primary);"></i> using HTML, CSS & JavaScript</p>
     </footer>
 
     <aside class="chatbot-panel" id="chatbotPanel" aria-hidden="true" aria-label="MakiBot chat assistant">
@@ -383,7 +411,7 @@
         </div>
         <form class="chatbot-composer" id="chatbotForm">
             <label class="sr-only" for="chatbotInput">Type your message</label>
-            <textarea class="chatbot-input" id="chatbotInput" rows="2" placeholder="Ask something about this portfolio..."></textarea>
+            <textarea class="chatbot-input" id="chatbotInput" rows="2" placeholder="Ask something..."></textarea>
             <button class="chatbot-send" id="chatbotSend" type="submit" aria-label="Send message">
                 <i class="fas fa-paper-plane"></i>
             </button>

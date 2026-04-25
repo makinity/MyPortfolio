@@ -273,7 +273,7 @@
             ? data.reply.trim()
             : 'I could not generate a reply just now.';
     };
-    const sendContactMessage = async ({ name, email, message, website }) => {
+    const sendContactMessage = async ({ name, email, message, referralCode }) => {
         const contactApiUrl = resolveWorkerEndpoint('/contact');
         if (!contactApiUrl) {
             throw new Error('Contact service is not configured.');
@@ -288,7 +288,7 @@
                 name,
                 email,
                 message,
-                website
+                referralCode
             })
         });
 
@@ -394,7 +394,7 @@
             const name = String(formData.get('name') || '').trim();
             const email = String(formData.get('email') || '').trim();
             const message = String(formData.get('message') || '').trim();
-            const website = String(formData.get('website') || '').trim();
+            const referralCode = String(formData.get('referralCode') || '').trim();
 
             if (!name || !email || !message) {
                 setContactFormStatus('Please complete all fields before sending.', 'is-error');
@@ -405,7 +405,7 @@
             setContactFormDisabled(true);
 
             try {
-                const result = await sendContactMessage({ name, email, message, website });
+                const result = await sendContactMessage({ name, email, message, referralCode });
                 contactForm.reset();
                 setContactFormStatus(result, 'is-success');
             } catch (error) {
