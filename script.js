@@ -453,16 +453,15 @@
     // --- Dynamic Portfolio Fetching ---
     const fetchAndRenderPortfolio = async () => {
         try {
-            const apiUrl = getSiteBaseUrl() 
-                ? new URL('portfolio', getSiteBaseUrl()).href 
-                : 'https://portfolio-chat.makidevportfolio.workers.dev/portfolio';
-                
-            // If running locally or from file system, point to local worker
+            // In production (GitHub Pages), we MUST use the deployed Cloudflare Worker
+            // In development, we use the local wrangler dev worker
             const isLocal = window.location.hostname === 'localhost' || 
                             window.location.hostname === '127.0.0.1' || 
                             window.location.protocol === 'file:';
                             
-            const finalUrl = isLocal ? 'http://127.0.0.1:8787/portfolio' : apiUrl;
+            const finalUrl = isLocal 
+                ? 'http://127.0.0.1:8787/portfolio' 
+                : 'https://portfolio-chat.makidevportfolio.workers.dev/portfolio';
 
             const response = await fetch(finalUrl);
             if (!response.ok) throw new Error('Failed to fetch data');
