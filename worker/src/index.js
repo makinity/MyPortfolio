@@ -21,7 +21,7 @@ const getCorsHeaders = (requestOrigin, env) => {
     return allowedOrigin
         ? {
             "Access-Control-Allow-Origin": allowedOrigin,
-            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
             "Access-Control-Allow-Headers": "Content-Type",
             "Vary": "Origin",
         }
