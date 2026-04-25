@@ -44,6 +44,7 @@
     const chatbotInput = document.getElementById('chatbotInput');
     const chatbotSend = document.getElementById('chatbotSend');
     const contactForm = document.getElementById('contactForm');
+    const contactSubmit = document.getElementById('contactSubmit');
     const contactFormStatus = document.getElementById('contactFormStatus');
     const anchorGap = 0;
     let chatbotHistory = [];
@@ -231,6 +232,10 @@
                 element.disabled = isDisabled;
             }
         });
+
+        if (contactSubmit) {
+            contactSubmit.classList.toggle('is-loading', isDisabled);
+        }
     };
     const sendChatMessage = async (message) => {
         if (!isChatbotConfigured()) {

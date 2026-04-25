@@ -379,7 +379,10 @@
                     <label class="sr-only" for="contactMessage">Message</label>
                     <textarea id="contactMessage" name="message" rows="4" placeholder="Message..." required></textarea>
                     <input id="contactBotcheck" name="botcheck" class="contact-botcheck" type="checkbox" tabindex="-1" autocomplete="off" aria-hidden="true">
-                    <button class="btn btn-primary" id="contactSubmit" type="submit" style="align-self: flex-start;">Send Message</button>
+                    <button class="btn btn-primary contact-submit-btn" id="contactSubmit" type="submit" style="align-self: flex-start;">
+                        <span class="contact-submit-spinner" aria-hidden="true"></span>
+                        <span class="contact-submit-label">Send Message</span>
+                    </button>
                     <p class="contact-form-status" id="contactFormStatus" aria-live="polite"></p>
                 </form>
             </div>
