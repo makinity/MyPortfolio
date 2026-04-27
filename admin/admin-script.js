@@ -194,13 +194,13 @@ document.addEventListener('DOMContentLoaded', () => {
             <form id="galleryForm" class="modal-form">
                 <div class="form-group">
                     <label for="imgFile">${isEdit ? 'Replace Image (Optional)' : 'Select Image File'}</label>
-                    <input type="file" id="imgFile" accept="image/*" style="width: 100%; padding: 0.5rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary);">
+                    <input type="file" id="imgFile" accept="image/*" style="width: 100%; padding: 0.5rem; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary);">
                     ${isEdit ? '<p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">Leave empty to keep current image.</p>' : ''}
                 </div>
 
                 <div class="form-group" style="margin-top: 1.5rem;">
                     <label for="imgCaption">Caption</label>
-                    <textarea id="imgCaption" placeholder="Brief description..." style="width: 100%; padding: 0.75rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); resize: vertical; min-height: 80px;">${isEdit ? item.caption : ''}</textarea>
+                    <textarea id="imgCaption" placeholder="Brief description..." style="width: 100%; padding: 0.75rem; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); resize: vertical; min-height: 80px;">${isEdit ? item.caption : ''}</textarea>
                 </div>
             </form>
         `;
