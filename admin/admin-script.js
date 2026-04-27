@@ -91,18 +91,28 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             grid.innerHTML = data.map(item => {
-                // Determine the best path for the image
                 let displayUrl = item.image_url || '';
                 
-                if (displayUrl && !displayUrl.startsWith('http') && !displayUrl.startsWith('blob:') && !displayUrl.startsWith('data:')) {
-                    // Try both ../assets and /assets depending on environment
-                    // If we are on a server, /assets usually works better.
-                    // If we are on file://, ../assets is required.
-                    const isLocalFile = window.location.protocol === 'file:';
-                    displayUrl = isLocalFile ? '../' + displayUrl : '/' + displayUrl;
+                // If it's a Supabase URL (starts with http), use it directly
+                if (displayUrl.startsWith('http') || displayUrl.startsWith('blob:') || displayUrl.startsWith('data:')) {
+                    // It's already a full URL
+                } else {
+                    // It's a local path like "assets/images/gallery/1.jpg"
+                    // We need to ensure it reaches the root 'assets' folder from 'admin/admin.html'
+                    
+                    // Remove leading slash if present to normalize
+                    let cleanPath = displayUrl.startsWith('/') ? displayUrl.substring(1) : displayUrl;
+                    
+                    // If it already starts with 'assets/', we just need to go up one level
+                    if (cleanPath.startsWith('assets/')) {
+                        displayUrl = '../' + cleanPath;
+                    } else {
+                        // If it's just "images/...", prepend "../assets/"
+                        displayUrl = '../assets/' + cleanPath;
+                    }
                 }
 
-                console.log(`Gallery Item ${item.id} URL:`, displayUrl);
+                console.log(`Rendering Item ${item.id} with path:`, displayUrl);
 
                 return `
                     <div class="card" style="padding: 1rem; position: relative;">
@@ -150,29 +160,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const content = `
             <form id="galleryForm" class="modal-form">
-                <div class="form-group" style="margin-bottom: 1rem;">
-                    <label>Image Source</label>
-                    <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
-                        <label style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
-                            <input type="radio" name="sourceType" value="file" ${!isEdit ? 'checked' : ''}> File Upload
-                        </label>
-                        <label style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
-                            <input type="radio" name="sourceType" value="url" ${isEdit ? 'checked' : ''}> External URL
-                        </label>
-                    </div>
-                </div>
-
-                <div id="fileSourceGroup" class="form-group" style="display: ${!isEdit ? 'block' : 'none'};">
-                    <label for="imgFile">Select Image File</label>
+                <div class="form-group">
+                    <label for="imgFile">${isEdit ? 'Replace Image (Optional)' : 'Select Image File'}</label>
                     <input type="file" id="imgFile" accept="image/*" style="width: 100%; padding: 0.5rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary);">
+                    ${isEdit ? '<p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">Leave empty to keep current image.</p>' : ''}
                 </div>
 
-                <div id="urlSourceGroup" class="form-group" style="display: ${isEdit ? 'block' : 'none'}; margin-top: 1rem;">
-                    <label for="imgUrl">Image URL</label>
-                    <input type="url" id="imgUrl" value="${isEdit ? item.image_url : ''}" placeholder="https://example.com/image.jpg" style="width: 100%; padding: 0.75rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary);">
-                </div>
-
-                <div class="form-group" style="margin-top: 1rem;">
+                <div class="form-group" style="margin-top: 1.5rem;">
                     <label for="imgCaption">Caption</label>
                     <textarea id="imgCaption" placeholder="Brief description..." style="width: 100%; padding: 0.75rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); resize: vertical; min-height: 80px;">${isEdit ? item.caption : ''}</textarea>
                 </div>
@@ -180,46 +174,44 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
 
         window.openModal(title, content, async () => {
-            const sourceType = document.querySelector('input[name="sourceType"]:checked').value;
             const caption = document.getElementById('imgCaption').value;
-            let imageUrl = '';
+            const fileInput = document.getElementById('imgFile');
+            const file = fileInput.files[0];
+            let imageUrl = isEdit ? item.image_url : '';
 
-            if (sourceType === 'file') {
-                const fileInput = document.getElementById('imgFile');
-                const file = fileInput.files[0];
-                
-                if (!file && !isEdit) {
-                    showToast('Please select a file to upload', true);
-                    throw new Error('No file selected');
-                }
-
-                if (file) {
-                    // Upload to Supabase Storage - matching your 'Gallery' bucket and folder structure
-                    const fileName = `images/gallery/${Date.now()}-${file.name}`;
-                    const { data: uploadData, error: uploadError } = await window.supabase.storage
-                        .from('Gallery')
-                        .upload(fileName, file);
-
-                    if (uploadError) {
-                        showToast('Upload failed: ' + uploadError.message, true);
-                        throw uploadError;
+            // Handle File Upload if a file is selected
+            if (file) {
+                // If editing, try to delete the OLD file first
+                if (isEdit && item.image_url && item.image_url.includes('storage/v1/object/public/Gallery/')) {
+                    const pathParts = item.image_url.split('/Gallery/');
+                    if (pathParts.length > 1) {
+                        const oldFilePath = pathParts[1];
+                        console.log('Cleaning up old file:', oldFilePath);
+                        await window.supabase.storage
+                            .from('Gallery')
+                            .remove([oldFilePath]);
                     }
+                }
 
-                    // Get Public URL
-                    const { data: urlData } = window.supabase.storage
-                        .from('Gallery')
-                        .getPublicUrl(fileName);
-                    
-                    imageUrl = urlData.publicUrl;
-                } else if (isEdit) {
-                    imageUrl = item.image_url; // Keep existing
+                // Upload the NEW file
+                const fileName = `images/gallery/${Date.now()}-${file.name}`;
+                const { data: uploadData, error: uploadError } = await window.supabase.storage
+                    .from('Gallery')
+                    .upload(fileName, file);
+
+                if (uploadError) {
+                    showToast('Upload failed: ' + uploadError.message, true);
+                    throw uploadError;
                 }
-            } else {
-                imageUrl = document.getElementById('imgUrl').value;
-                if (!imageUrl) {
-                    showToast('Image URL is required', true);
-                    throw new Error('URL required');
-                }
+
+                const { data: urlData } = window.supabase.storage
+                    .from('Gallery')
+                    .getPublicUrl(fileName);
+                
+                imageUrl = urlData.publicUrl;
+            } else if (!isEdit) {
+                showToast('Please select a file to upload', true);
+                throw new Error('No file selected');
             }
 
             try {
@@ -241,41 +233,53 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderGallery(); 
             } catch (error) {
                 console.error('Gallery save error:', error);
-                showToast('Failed to save gallery item', true);
+                showToast('Save failed: ' + error.message, true);
                 throw error;
             }
-        });
-
-        // Toggle source groups
-        const radios = document.querySelectorAll('input[name="sourceType"]');
-        radios.forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                document.getElementById('fileSourceGroup').style.display = e.target.value === 'file' ? 'block' : 'none';
-                document.getElementById('urlSourceGroup').style.display = e.target.value === 'url' ? 'block' : 'none';
-            });
         });
     };
 
     const handleGalleryDelete = (id) => {
         const title = 'Confirm Deletion';
         const content = `
-            <p>Are you sure you want to delete this gallery item? This action cannot be undone.</p>
+            <p>Are you sure you want to delete this gallery item? This will also remove the file from storage. This action cannot be undone.</p>
         `;
 
         window.openModal(title, content, async () => {
             try {
-                const { error } = await window.supabase
+                // 1. Fetch the item first to get the image URL
+                const { data: item, error: fetchError } = await window.supabase
+                    .from('gallery')
+                    .select('image_url')
+                    .eq('id', id)
+                    .single();
+
+                if (fetchError) throw fetchError;
+
+                // 2. If it's a Supabase storage URL, delete the file
+                if (item.image_url && item.image_url.includes('storage/v1/object/public/Gallery/')) {
+                    const pathParts = item.image_url.split('/Gallery/');
+                    if (pathParts.length > 1) {
+                        const filePath = pathParts[1];
+                        await window.supabase.storage
+                            .from('Gallery')
+                            .remove([filePath]);
+                    }
+                }
+
+                // 3. Delete from database
+                const { error: dbError } = await window.supabase
                     .from('gallery')
                     .delete()
                     .eq('id', id);
 
-                if (error) throw error;
+                if (dbError) throw dbError;
 
-                showToast('Gallery item deleted');
+                showToast('Gallery item and file deleted');
                 renderGallery(); 
             } catch (error) {
                 console.error('Gallery delete error:', error);
-                showToast('Failed to delete item', true);
+                showToast('Failed to delete item: ' + error.message, true);
                 throw error;
             }
         });
