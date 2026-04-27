@@ -1081,21 +1081,36 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     const title = `Message from ${item.name}`;
                     const content = `
-                        <div style="color: var(--text-secondary); margin-bottom: 1rem;">
-                            <p><strong>From:</strong> ${item.name} (${item.email})</p>
-                            <p><strong>Subject:</strong> ${item.subject}</p>
-                            <p><strong>Date:</strong> ${new Date(item.created_at).toLocaleString()}</p>
-                        </div>
-                        <hr style="border: 0; border-top: 1px solid var(--border); margin: 1rem 0;">
-                        <div style="white-space: pre-wrap; line-height: 1.6; max-height: 300px; overflow-y: auto; margin-bottom: 1rem;">${item.message}</div>
-                        
-                        <div id="replySection" style="margin-top: 1.5rem; background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
-                            <label style="display: block; margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--blue-primary);"><i class="fas fa-reply"></i> Reply to ${item.name}</label>
-                            <textarea id="replyBody" rows="4" style="width: 100%;" placeholder="Type your reply here..."></textarea>
-                            <div style="display: flex; justify-content: flex-end; margin-top: 0.75rem;">
-                                <button id="btnSendReply" class="btn btn-primary btn-sm" style="width: auto;">
-                                    <i class="fas fa-paper-plane"></i> Send Reply
-                                </button>
+                        <div class="message-detail-view" style="padding: 1.5rem; background: var(--bg-primary); border-radius: 12px;">
+                            <div class="msg-meta" style="margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                                    <h4 style="margin: 0; color: var(--blue-accent); font-size: 1.1rem;">${item.from || item.name}</h4>
+                                    <span style="font-size: 0.8rem; color: var(--text-secondary); opacity: 0.7;">${item.date || new Date(item.created_at).toLocaleString()}</span>
+                                </div>
+                                <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.3rem;">
+                                    <span style="opacity: 0.6;">To:</span> ${item.email || 'You'}
+                                </div>
+                                <div style="font-size: 0.9rem; color: var(--text-secondary); font-weight: 500;">
+                                    <span style="opacity: 0.6;">Subject:</span> ${item.subject}
+                                </div>
+                            </div>
+                            
+                            <div class="msg-body" style="background: rgba(255,255,255,0.03); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; line-height: 1.6; color: var(--text-primary); min-height: 100px; white-space: pre-wrap;">${item.snippet || item.message}</div>
+                            
+                            <div class="reply-section" style="background: rgba(0, 123, 255, 0.05); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(0, 123, 255, 0.1);">
+                                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; color: var(--blue-accent);">
+                                    <i class="fas fa-reply"></i>
+                                    <span style="font-weight: 600; font-size: 0.9rem;">Reply to ${item.name || (item.from ? item.from.split('<')[0] : 'Sender')}</span>
+                                </div>
+                                <textarea id="replyBody" placeholder="Write your response here..." 
+                                    style="width: 100%; min-height: 150px; background: var(--bg-secondary); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 1rem; color: var(--text-primary); font-family: inherit; font-size: 0.95rem; resize: vertical; margin-bottom: 1rem; outline: none; transition: border-color 0.3s;"
+                                    onfocus="this.style.borderColor='var(--blue-accent)'"
+                                    onblur="this.style.borderColor='rgba(255,255,255,0.1)'"></textarea>
+                                <div style="display: flex; justify-content: flex-end;">
+                                    <button class="btn btn-primary" id="btnSendReply" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem;">
+                                        <i class="fas fa-paper-plane"></i> Send Reply
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     `;

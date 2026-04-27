@@ -259,6 +259,8 @@ const handleContactRequest = async (payload, env, corsHeaders) => {
         );
     }
 
+    console.log("EMAIL_SENT_SUCCESS", { id: emailResult.id });
+
     // Save to Supabase
     const supabase = getSupabaseClient(env);
     if (supabase) {
@@ -460,19 +462,39 @@ const handleGoogleCallback = async (url, env, corsHeaders) => {
 
     // Save refresh token to Supabase
     const supabase = getSupabaseClient(env);
-    const { error } = await supabase
+    if (!supabase) {
+        console.error("SUPABASE_CLIENT_MISSING_IN_CALLBACK");
+        return new Response("Database configuration missing", { status: 500 });
+    }
+
+    // Get the first profile ID
+    const { data: profileData, error: profileFetchError } = await supabase.from('profile').select('id').limit(1).single();
+    
+    if (profileFetchError || !profileData) {
+        console.error("PROFILE_FETCH_ERROR_IN_CALLBACK:", profileFetchError?.message);
+        return new Response("Could not find your profile in database", { status: 500 });
+    }
+
+    console.log("UPDATING_PROFILE_WITH_GMAIL:", user.email);
+
+    const { error: updateError } = await supabase
         .from('profile')
         .update({ 
             gmail_refresh_token: tokens.refresh_token,
             gmail_email: user.email,
-            gmail_enabled: true 
+            gmail_enabled: !!tokens.refresh_token 
         })
-        .match({ id: (await supabase.from('profile').select('id').limit(1).single()).data.id });
+        .eq('id', profileData.id);
 
-    if (error) return json({ error: error.message }, { status: 500, headers: corsHeaders });
+    if (updateError) {
+        console.error("PROFILE_UPDATE_ERROR_IN_CALLBACK:", updateError.message);
+        return new Response("Failed to save Gmail connection to database", { status: 500 });
+    }
 
-    // Redirect back to local admin
-    return Response.redirect('http://localhost:3000/admin/', 302);
+    console.log("GMAIL_CONNECTED_SUCCESSFULLY");
+
+    // Redirect back to admin
+    return Response.redirect(`https://makinity.github.io/MyPortfolio/admin/index.html?gmail=success`, 302);
 };
 
 const getGmailAccessToken = async (env, refreshToken) => {
@@ -537,17 +559,23 @@ const handleGmailReply = async (payload, env, corsHeaders) => {
     
     const { to, subject, message, threadId } = payload;
 
-    // Construct raw email
-    const email = [
+    // Construct headers conditionally
+    const headers = [
         `To: ${to}`,
         `Subject: Re: ${subject}`,
-        `In-Reply-To: ${threadId}`,
-        `References: ${threadId}`,
-        'Content-Type: text/plain; charset="UTF-8"',
-        '',
-        message
-    ].join('\n');
+        `From: ${profile.gmail_email}`,
+    ];
 
+    if (threadId) {
+        headers.push(`In-Reply-To: ${threadId}`);
+        headers.push(`References: ${threadId}`);
+    }
+
+    headers.push('Content-Type: text/plain; charset="UTF-8"');
+    headers.push('');
+    headers.push(message);
+
+    const email = headers.join('\n');
     const encodedEmail = btoa(unescape(encodeURIComponent(email))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
     const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
@@ -556,7 +584,10 @@ const handleGmailReply = async (payload, env, corsHeaders) => {
             Authorization: `Bearer ${accessToken}`,
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ raw: encodedEmail, threadId })
+        body: JSON.stringify({ 
+            raw: encodedEmail, 
+            ...(threadId ? { threadId } : {}) 
+        })
     });
 
     const result = await res.json();
