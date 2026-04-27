@@ -450,6 +450,81 @@
         }
     });
 
+    // --- Continuous Slider Logic (Auto-slide + Drag/Swipe) ---
+    const initContinuousSlider = (sliderId, speed = 1) => {
+        const slider = document.getElementById(sliderId);
+        if (!slider) return;
+
+        let currentX = 0;
+        let isDragging = false;
+        let startX = 0;
+        let scrollLeft = 0;
+        let lastTime = 0;
+
+        const animate = (time) => {
+            if (!lastTime) lastTime = time;
+            const deltaTime = time - lastTime;
+            lastTime = time;
+
+            if (!isDragging) {
+                // Auto-slide speed adjustment
+                currentX -= (speed * deltaTime) / 50; 
+                
+                const halfWidth = slider.scrollWidth / 2;
+                if (currentX <= -halfWidth) {
+                    currentX += halfWidth;
+                } else if (currentX > 0) {
+                    currentX -= halfWidth;
+                }
+                
+                slider.style.transform = `translateX(${currentX}px)`;
+            }
+
+            requestAnimationFrame(animate);
+        };
+
+        const startDragging = (e) => {
+            isDragging = true;
+            startX = (e.pageX || (e.touches && e.touches[0].pageX)) - slider.offsetLeft;
+            scrollLeft = currentX;
+        };
+
+        const stopDragging = () => {
+            isDragging = false;
+        };
+
+        const move = (e) => {
+            if (!isDragging) return;
+            const x = (e.pageX || (e.touches && e.touches[0].pageX)) - slider.offsetLeft;
+            const walk = (x - startX); 
+            currentX = scrollLeft + walk;
+            
+            const halfWidth = slider.scrollWidth / 2;
+            if (currentX <= -halfWidth) {
+                currentX += halfWidth;
+                startX = x - (currentX - scrollLeft);
+                scrollLeft = currentX;
+            } else if (currentX > 0) {
+                currentX -= halfWidth;
+                startX = x - (currentX - scrollLeft);
+                scrollLeft = currentX;
+            }
+            
+            slider.style.transform = `translateX(${currentX}px)`;
+        };
+
+        slider.addEventListener('mousedown', startDragging);
+        slider.addEventListener('touchstart', startDragging, { passive: true });
+        
+        window.addEventListener('mouseup', stopDragging);
+        window.addEventListener('touchend', stopDragging);
+        
+        window.addEventListener('mousemove', move);
+        window.addEventListener('touchmove', move, { passive: false });
+
+        requestAnimationFrame(animate);
+    };
+
     // --- Dynamic Portfolio Fetching ---
     const fetchAndRenderPortfolio = async () => {
         try {
@@ -590,6 +665,9 @@
                 
                 const cards = Array.from(projectSlider.children);
                 cards.forEach(card => projectSlider.appendChild(card.cloneNode(true)));
+                
+                // Initialize manual + auto sliding
+                initContinuousSlider('projectSlider', 1.5);
             }
             
             // 5. Gallery
@@ -609,6 +687,9 @@
                 
                 const cards = Array.from(gallerySlider.children);
                 cards.forEach(card => gallerySlider.appendChild(card.cloneNode(true)));
+                
+                // Initialize manual + auto sliding
+                initContinuousSlider('gallerySlider', 1.2);
             }
             
         } catch (error) {

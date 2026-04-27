@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Maki Dev | Mark Vencent L. Juntilla</title>
     <script>
-        (function() {
+        (function () {
             if (window.location.protocol === 'file:') {
                 window.__SITE_BASE_PATH__ = '';
                 return;
@@ -26,11 +27,14 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
+
 <body>
     <nav aria-label="Primary">
         <a class="brand" href="#home">Maki Dev</a>
@@ -46,11 +50,13 @@
         </div>
         <div class="dev-profile desktop-profile">
             <div class="avatar">
-                <img src="assets/images/profile/1.jpg" alt="Mark Vencent profile photo" loading="eager" decoding="async">
+                <img src="assets/images/profile/1.jpg" alt="Mark Vencent profile photo" loading="eager"
+                    decoding="async">
             </div>
             <span class="name-tag">Mark Vencent</span>
         </div>
-        <button class="menu-toggle" id="menuToggle" type="button" aria-expanded="false" aria-controls="mobileDrawer" aria-label="Open navigation menu">
+        <button class="menu-toggle" id="menuToggle" type="button" aria-expanded="false" aria-controls="mobileDrawer"
+            aria-label="Open navigation menu">
             <span></span>
             <span></span>
             <span></span>
@@ -92,7 +98,8 @@
                     <h1>Building <span class="highlight">digital experiences</span><br>with code & creativity</h1>
                     <p class="subhead" id="heroSubhead">Mark Vencent L. Juntilla &mdash; Web Developer</p>
                     <div class="hero-details">
-                        <div class="detail-item" id="heroLocation"><i class="fas fa-map-marker-alt"></i> Sulop, Davao del Sur</div>
+                        <div class="detail-item" id="heroLocation"><i class="fas fa-map-marker-alt"></i> Sulop, Davao
+                            del Sur</div>
                         <div class="detail-item"><i class="fas fa-calendar-alt"></i> 21 years</div>
                     </div>
 
@@ -130,24 +137,33 @@
             <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
                 <div style="flex: 2; min-width: 280px;">
                     <p id="aboutText" style="font-size: 1.2rem; color: var(--text-secondary); margin-bottom: 1.5rem;">
-                        I'm Mark, a 21-year-old developer from Sulop, Davao del Sur. I love turning complex problems into simple, beautiful, and intuitive solutions. When I'm not coding, you'll find me at the gym pushing my limits.
+                        I'm Mark, a 21-year-old developer from Sulop, Davao del Sur. I love turning complex problems
+                        into simple, beautiful, and intuitive solutions. When I'm not coding, you'll find me at the gym
+                        pushing my limits.
                     </p>
                     <p id="aboutTextSecondary" style="color: var(--text-secondary);">
-                        With a strong foundation in both frontend and backend technologies, I build full-stack applications that are fast, secure, and scalable. I'm constantly exploring new tools and best practices to stay ahead in the tech landscape.
+                        With a strong foundation in both frontend and backend technologies, I build full-stack
+                        applications that are fast, secure, and scalable. I'm constantly exploring new tools and best
+                        practices to stay ahead in the tech landscape.
                     </p>
-                    
+
                     <!-- API Integration Banner -->
                     <div class="api-banner" id="specialtyBanner">
                         <div class="api-icon">
                             <i id="specialtyMainIcon" class="fas fa-cloud-upload-alt"></i>
                         </div>
                         <div class="api-content">
-                            <h3 id="specialtyTitle"><i id="specialtySmallIcon" class="fas fa-plug" style="margin-right: 0.5rem;"></i>Experienced in API Integrations</h3>
-                            <p id="specialtyDesc" style="color: var(--text-secondary);">I integrate third-party APIs including Stripe, PayPal, Google Maps, Twilio, SendGrid, and more. From payment processing to communication services, I connect applications with powerful external services.</p>
+                            <h3 id="specialtyTitle"><i id="specialtySmallIcon" class="fas fa-plug"
+                                    style="margin-right: 0.5rem;"></i>Experienced in API Integrations</h3>
+                            <p id="specialtyDesc" style="color: var(--text-secondary);">I integrate third-party APIs
+                                including Stripe, PayPal, Google Maps, Twilio, SendGrid, and more. From payment
+                                processing to communication services, I connect applications with powerful external
+                                services.</p>
                         </div>
                     </div>
                 </div>
-                <div style="flex: 1; background: var(--bg-secondary); padding: 1.5rem; border-radius: 20px; border-left: 4px solid var(--blue-primary);">
+                <div
+                    style="flex: 1; background: var(--bg-secondary); padding: 1.5rem; border-radius: 20px; border-left: 4px solid var(--blue-primary);">
                     <h3 style="margin-bottom: 1rem; color: var(--blue-accent);">Quick Facts</h3>
                     <ul class="info-list" id="quickFactsList">
                         <li><i class="fas fa-location-dot"></i> Based in Davao del Sur</li>
@@ -156,7 +172,7 @@
                         <li><i class="fas fa-plug"></i> API Integration</li>
                         <li><i class="fas fa-book-open"></i> Lifelong learner</li>
                     </ul>
-                    
+
                     <h3 style="margin: 1.5rem 0 1rem 0; color: var(--blue-accent);">Side Skills</h3>
                     <ul class="info-list" id="sideSkillsList">
                         <li><i class="fas fa-table"></i> Data Entry & Management</li>
@@ -175,7 +191,8 @@
                 <div class="orbit-container">
                     <div class="center-profile has-image" id="profileImageContainer">
                         <span class="placeholder">MARK</span>
-                        <img src="assets/images/profile/1.jpg" alt="Mark Vencent L. Juntilla" loading="eager" decoding="async">
+                        <img src="assets/images/profile/1.jpg" alt="Mark Vencent L. Juntilla" loading="eager"
+                            decoding="async">
                     </div>
                     <!-- Orbit items will be injected by JavaScript -->
                 </div>
@@ -193,9 +210,6 @@
                     <!-- Gallery items will be injected by JavaScript -->
                 </div>
             </div>
-            <p style="color: var(--text-secondary); margin-top: 1rem; text-align: center;">
-                <i class="fas fa-pause-circle"></i> Hover to pause &bull; Scroll to see more
-            </p>
         </section>
 
         <!-- Projects Section with Auto-Scroll -->
@@ -206,9 +220,6 @@
                     <!-- Projects will be injected by JavaScript -->
                 </div>
             </div>
-            <p style="color: var(--text-secondary); margin-top: 1rem; text-align: center;">
-                <i class="fas fa-pause-circle"></i> Hover to pause auto-scroll
-            </p>
         </section>
 
         <!-- Contact Section -->
@@ -232,19 +243,23 @@
                     <div class="social-links" id="socialLinksContainer">
                         <!-- Social Links injected by JS -->
                     </div>
-                </div>  
+                </div>
                 <form class="contact-form" id="contactForm">
                     <input type="hidden" name="access_key" value="8819346e-cc06-478c-a9ee-6c6b9a9d6ea1">
                     <input type="hidden" name="subject" value="New portfolio contact form submission">
                     <input type="hidden" name="from_name" value="Maki Dev Portfolio">
                     <label class="sr-only" for="contactName">Your Name</label>
-                    <input id="contactName" name="name" type="text" placeholder="Your Name" autocomplete="name" required>
+                    <input id="contactName" name="name" type="text" placeholder="Your Name" autocomplete="name"
+                        required>
                     <label class="sr-only" for="contactEmail">Email Address</label>
-                    <input id="contactEmail" name="email" type="email" placeholder="Email Address" autocomplete="email" required>
+                    <input id="contactEmail" name="email" type="email" placeholder="Email Address" autocomplete="email"
+                        required>
                     <label class="sr-only" for="contactMessage">Message</label>
                     <textarea id="contactMessage" name="message" rows="4" placeholder="Message..." required></textarea>
-                    <input id="contactBotcheck" name="botcheck" class="contact-botcheck" type="checkbox" tabindex="-1" autocomplete="off" aria-hidden="true">
-                    <button class="btn btn-primary contact-submit-btn" id="contactSubmit" type="submit" style="align-self: flex-start;">
+                    <input id="contactBotcheck" name="botcheck" class="contact-botcheck" type="checkbox" tabindex="-1"
+                        autocomplete="off" aria-hidden="true">
+                    <button class="btn btn-primary contact-submit-btn" id="contactSubmit" type="submit"
+                        style="align-self: flex-start;">
                         <span class="contact-submit-spinner" aria-hidden="true"></span>
                         <span class="contact-submit-label">Send Message</span>
                     </button>
@@ -275,7 +290,8 @@
         </div>
         <div class="chatbot-messages" id="chatbotMessages">
             <div class="chatbot-message assistant">
-                <div class="chatbot-bubble">Hi, I'm MakiBot. Ask me about Mark's projects, tech stack, or how to get in touch.</div>
+                <div class="chatbot-bubble">Hi, I'm MakiBot. Ask me about Mark's projects, tech stack, or how to get in
+                    touch.</div>
             </div>
         </div>
         <form class="chatbot-composer" id="chatbotForm">
@@ -287,7 +303,8 @@
         </form>
     </aside>
 
-    <button class="chatbot-launcher" id="chatbotToggle" type="button" aria-label="Open chatbot" aria-expanded="false" aria-controls="chatbotPanel">
+    <button class="chatbot-launcher" id="chatbotToggle" type="button" aria-label="Open chatbot" aria-expanded="false"
+        aria-controls="chatbotPanel">
         <i class="fas fa-robot"></i>
     </button>
 
@@ -297,4 +314,5 @@
 
     <script src="script.js"></script>
 </body>
+
 </html>

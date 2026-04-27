@@ -591,17 +591,10 @@ h2::after {
 .gallery-slider {
     display: flex;
     gap: 2rem;
-    animation: scrollGallery 40s linear infinite;
     width: fit-content;
-}
-
-.gallery-slider:hover {
-    animation-play-state: paused;
-}
-
-@keyframes scrollGallery {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
+    will-change: transform;
+    cursor: grab;
+    user-select: none;
 }
 
 .gallery-card {
@@ -698,17 +691,10 @@ h2::after {
 .project-slider {
     display: flex;
     gap: 2rem;
-    animation: scrollProjects 30s linear infinite;
     width: fit-content;
-}
-
-.project-slider:hover {
-    animation-play-state: paused;
-}
-
-@keyframes scrollProjects {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
+    will-change: transform;
+    cursor: grab;
+    user-select: none;
 }
 
 .project-card {
