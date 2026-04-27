@@ -425,21 +425,54 @@ body {
     gap: 1.5rem;
 }
 
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group input[type="file"],
 .form-group textarea {
     width: 100%;
-    padding: 0.75rem;
+    padding: 0.75rem 1rem;
     background: var(--bg-dark);
     border: 1px solid var(--border);
     border-radius: 6px;
     color: var(--text-primary);
     font-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    border-color: var(--blue-primary);
+    box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
+}
+
+.form-group input[type="file"] {
+    padding: 0.5rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    background: var(--bg-dark);
+    display: block;
+}
+
+.form-group input[type="file"]::-webkit-file-upload-button {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    margin-right: 1rem;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.form-group textarea {
     resize: vertical;
     min-height: 100px;
 }
 
-.form-group textarea:focus {
-    outline: none;
-    border-color: var(--blue-primary);
+::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.6;
 }
 
 /* Modals */

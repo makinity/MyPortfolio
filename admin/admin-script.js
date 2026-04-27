@@ -51,6 +51,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 initDashboardCharts();
             } else if (pageName === 'manage-gallery') {
                 initGalleryPage();
+            } else if (pageName === 'manage-projects') {
+                initProjectsPage();
+            } else if (pageName === 'manage-expertise-tech') {
+                initTechStackPage();
+            } else if (pageName === 'manage-expertise-sideskills') {
+                initSideSkillsPage();
+            } else if (pageName === 'manage-identity-profile') {
+                initProfilePage();
+            } else if (pageName === 'manage-identity-socials') {
+                initSocialLinksPage();
+            } else if (pageName === 'manage-expertise-specialty') {
+                initSpecialtyPage();
+            } else if (pageName === 'manage-system-messages') {
+                initMessagesPage();
             }
             
         } catch (error) {
@@ -289,6 +303,936 @@ document.addEventListener('DOMContentLoaded', () => {
         if (saveBtn) {
             saveBtn.textContent = 'Delete';
             saveBtn.classList.add('btn-danger'); // Add a red style if needed
+        }
+    };
+
+    // --- Projects Management ---
+    const initProjectsPage = async () => {
+        const btnAdd = document.getElementById('addProjectBtn');
+        if (btnAdd) {
+            btnAdd.addEventListener('click', () => openProjectModal('add'));
+        }
+        await renderProjects();
+    };
+
+    const renderProjects = async () => {
+        const tbody = document.getElementById('projectsList');
+        if (!tbody) return;
+
+        try {
+            const { data, error } = await window.supabase
+                .from('projects')
+                .select('*')
+                .order('sort_order', { ascending: true });
+
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No projects found.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(project => {
+                let displayUrl = project.image_url || '';
+                
+                // Path normalization
+                if (displayUrl.startsWith('http') || displayUrl.startsWith('blob:') || displayUrl.startsWith('data:')) {
+                    // OK
+                } else {
+                    let cleanPath = displayUrl.startsWith('/') ? displayUrl.substring(1) : displayUrl;
+                    displayUrl = cleanPath.startsWith('assets/') ? '../' + cleanPath : '../assets/' + cleanPath;
+                }
+
+                return `
+                    <tr>
+                        <td><img src="${displayUrl}" style="width: 50px; height: 30px; object-fit: cover; border-radius: 4px; background: #1e293b;" onerror="this.src='../assets/images/gallery/placeholder.jpg'"></td>
+                        <td><strong>${project.title}</strong></td>
+                        <td>${Array.isArray(project.tags) ? project.tags.join(', ') : (project.tags || '')}</td>
+                        <td>${project.sort_order}</td>
+                        <td>
+                            <div class="action-btns">
+                                <button class="btn-icon edit-project" data-id="${project.id}" title="Edit"><i class="fas fa-edit"></i></button>
+                                <button class="btn-icon delete delete-project" data-id="${project.id}" title="Delete"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Listeners
+            tbody.querySelectorAll('.edit-project').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-id');
+                    const item = data.find(p => String(p.id) === String(id));
+                    if (item) {
+                        openProjectModal('edit', item);
+                    } else {
+                        showToast('Project not found', true);
+                    }
+                });
+            });
+
+            tbody.querySelectorAll('.delete-project').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-id');
+                    handleProjectDelete(id);
+                });
+            });
+
+        } catch (error) {
+            console.error('Render projects error:', error);
+            showToast('Failed to load projects', true);
+        }
+    };
+
+    const openProjectModal = (mode, item = null) => {
+        const isEdit = mode === 'edit';
+        const title = isEdit ? 'Edit Project' : 'Add New Project';
+        
+        const tagsString = isEdit && Array.isArray(item.tags) ? item.tags.join(', ') : (item?.tags || '');
+
+        const content = `
+            <div class="form-group">
+                <label>Project Title</label>
+                <input type="text" id="projTitle" value="${isEdit ? item.title : ''}" placeholder="e.g. Portfolio V1">
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="projDesc" rows="3" placeholder="Briefly describe the project">${isEdit ? item.description : ''}</textarea>
+            </div>
+            <div class="form-group">
+                <label>Tags (comma separated)</label>
+                <input type="text" id="projTags" value="${tagsString}" placeholder="e.g. React, Supabase, Tailwind">
+            </div>
+            <div class="form-group">
+                <label>Sort Order</label>
+                <input type="number" id="projOrder" value="${isEdit ? item.sort_order : '0'}">
+            </div>
+            <div class="form-group">
+                <label>Project Image</label>
+                <input type="file" id="projFile" accept="image/*">
+                ${isEdit ? `<p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.5rem;">Keep current image if empty</p>` : ''}
+            </div>
+        `;
+
+        window.openModal(title, content, async () => {
+            const projTitle = document.getElementById('projTitle').value;
+            const projDesc = document.getElementById('projDesc').value;
+            const projTags = document.getElementById('projTags').value.split(',').map(t => t.trim()).filter(t => t !== '');
+            const projOrder = parseInt(document.getElementById('projOrder').value) || 0;
+            const fileInput = document.getElementById('projFile');
+            const file = fileInput.files[0];
+            
+            let imageUrl = isEdit ? item.image_url : '';
+
+            try {
+                if (file) {
+                    // Upload new image
+                    const fileName = `images/project/${Date.now()}-${file.name}`;
+                    const { error: upErr } = await window.supabase.storage
+                        .from('Gallery')
+                        .upload(fileName, file);
+                    
+                    if (upErr) throw upErr;
+
+                    const { data: urlData } = window.supabase.storage
+                        .from('Gallery')
+                        .getPublicUrl(fileName);
+                    
+                    // Delete old image only AFTER new one is uploaded successfully
+                    if (isEdit && item.image_url && item.image_url.includes('storage/v1/object/public/Gallery/')) {
+                        const pathParts = item.image_url.split('/Gallery/');
+                        if (pathParts.length > 1) {
+                            await window.supabase.storage.from('Gallery').remove([pathParts[1]]);
+                        }
+                    }
+                    
+                    imageUrl = urlData.publicUrl;
+                } else if (!isEdit) {
+                    showToast('Please select an image', true);
+                    throw new Error('Image required');
+                }
+
+                const projectData = {
+                    title: projTitle,
+                    description: projDesc,
+                    tags: projTags,
+                    sort_order: projOrder,
+                    image_url: imageUrl
+                };
+
+                console.log('Saving project data:', projectData);
+
+                let res;
+                if (isEdit) {
+                    res = await window.supabase.from('projects').update(projectData).eq('id', item.id);
+                } else {
+                    res = await window.supabase.from('projects').insert([projectData]);
+                }
+
+                if (res.error) throw res.error;
+
+                showToast(`Project ${isEdit ? 'updated' : 'added'} successfully`);
+                renderProjects();
+
+            } catch (error) {
+                console.error('Project save error:', error);
+                showToast('Failed to save project: ' + error.message, true);
+                throw error;
+            }
+        });
+    };
+
+    const handleProjectDelete = async (id) => {
+        const title = 'Confirm Deletion';
+        const content = `<p>Are you sure you want to delete this project? This will also remove the image from storage.</p>`;
+
+        window.openModal(title, content, async () => {
+            try {
+                const { data: item } = await window.supabase.from('projects').select('image_url').eq('id', id).single();
+
+                if (item?.image_url && item.image_url.includes('storage/v1/object/public/Gallery/')) {
+                    const pathParts = item.image_url.split('/Gallery/');
+                    if (pathParts.length > 1) {
+                        await window.supabase.storage.from('Gallery').remove([pathParts[1]]);
+                    }
+                }
+
+                const { error } = await window.supabase.from('projects').delete().eq('id', id);
+                if (error) throw error;
+
+                showToast('Project deleted');
+                renderProjects();
+            } catch (error) {
+                console.error('Delete error:', error);
+                showToast('Failed to delete project', true);
+                throw error;
+            }
+        });
+
+        const btn = document.getElementById('saveModal');
+        if (btn) {
+            btn.textContent = 'Delete';
+            btn.classList.add('btn-danger');
+        }
+    };
+
+    // --- Core Tech Stack ---
+    const initTechStackPage = async () => {
+        const btnAdd = document.getElementById('addTechBtn');
+        if (btnAdd) {
+            btnAdd.addEventListener('click', () => openTechStackModal('add'));
+        }
+        await renderTechStack();
+    };
+
+    const renderTechStack = async () => {
+        const tbody = document.getElementById('techStackList');
+        if (!tbody) return;
+
+        try {
+            const { data, error } = await window.supabase
+                .from('tech_stack')
+                .select('*')
+                .order('sort_order', { ascending: true });
+
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No tech stack items found.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(tech => `
+                <tr>
+                    <td><i class="${tech.icon_url}" style="margin-right: 1rem; width: 20px;"></i> <strong>${tech.name}</strong></td>
+                    <td><code>${tech.icon_url}</code></td>
+                    <td>${tech.sort_order}</td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="btn-icon edit-tech" data-id="${tech.id}" title="Edit"><i class="fas fa-edit"></i></button>
+                            <button class="btn-icon delete delete-tech" data-id="${tech.id}" title="Delete"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            // Listeners
+            tbody.querySelectorAll('.edit-tech').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-id');
+                    const item = data.find(t => String(t.id) === String(id));
+                    openTechStackModal('edit', item);
+                });
+            });
+
+            tbody.querySelectorAll('.delete-tech').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-id');
+                    handleTechStackDelete(id);
+                });
+            });
+
+        } catch (error) {
+            console.error('Render tech stack error:', error);
+            showToast('Failed to load tech stack', true);
+        }
+    };
+
+    const openTechStackModal = (mode, item = null) => {
+        const isEdit = mode === 'edit';
+        const title = isEdit ? 'Edit Tech Item' : 'Add New Tech';
+
+        const content = `
+            <div class="form-group">
+                <label>Technology Name</label>
+                <input type="text" id="techName" value="${isEdit ? item.name : ''}" placeholder="e.g. React">
+            </div>
+            <div class="form-group">
+                <label>Icon Class (FontAwesome)</label>
+                <input type="text" id="techIcon" value="${isEdit ? item.icon_url : ''}" placeholder="fab fa-react">
+                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.5rem;">Use FontAwesome classes like <b>fab fa-react</b> or <b>fas fa-database</b></p>
+            </div>
+            <div class="form-group">
+                <label>Sort Order</label>
+                <input type="number" id="techOrder" value="${isEdit ? item.sort_order : '0'}">
+            </div>
+        `;
+
+        window.openModal(title, content, async () => {
+            const name = document.getElementById('techName').value;
+            const icon = document.getElementById('techIcon').value;
+            const order = parseInt(document.getElementById('techOrder').value) || 0;
+
+            if (!name || !icon) {
+                showToast('Name and Icon are required', true);
+                throw new Error('Missing fields');
+            }
+
+            try {
+                const techData = {
+                    name,
+                    icon_url: icon,
+                    sort_order: order
+                };
+
+                let res;
+                if (isEdit) {
+                    res = await window.supabase.from('tech_stack').update(techData).eq('id', item.id);
+                } else {
+                    res = await window.supabase.from('tech_stack').insert([techData]);
+                }
+
+                if (res.error) throw res.error;
+
+                showToast(`Tech stack ${isEdit ? 'updated' : 'added'} successfully`);
+                renderTechStack();
+
+            } catch (error) {
+                console.error('Tech stack save error:', error);
+                showToast('Failed to save tech stack: ' + error.message, true);
+                throw error;
+            }
+        });
+    };
+
+    const handleTechStackDelete = async (id) => {
+        const title = 'Confirm Deletion';
+        const content = `<p>Are you sure you want to delete this tech stack item?</p>`;
+
+        window.openModal(title, content, async () => {
+            try {
+                const { error } = await window.supabase.from('tech_stack').delete().eq('id', id);
+                if (error) throw error;
+
+                showToast('Tech stack item deleted');
+                renderTechStack();
+            } catch (error) {
+                console.error('Delete error:', error);
+                showToast('Failed to delete tech stack item', true);
+                throw error;
+            }
+        });
+
+        const btn = document.getElementById('saveModal');
+        if (btn) {
+            btn.textContent = 'Delete';
+            btn.classList.add('btn-danger');
+        }
+    };
+
+    // --- Side Skills ---
+    const initSideSkillsPage = async () => {
+        const btnAdd = document.getElementById('addSideSkillBtn');
+        if (btnAdd) {
+            btnAdd.addEventListener('click', () => openSideSkillModal('add'));
+        }
+        await renderSideSkills();
+    };
+
+    const renderSideSkills = async () => {
+        const tbody = document.getElementById('sideSkillsList');
+        if (!tbody) return;
+
+        try {
+            const { data, error } = await window.supabase
+                .from('side_skills')
+                .select('*')
+                .order('sort_order', { ascending: true });
+
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No side skills found.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(skill => `
+                <tr>
+                    <td><i class="${skill.icon}" style="margin-right: 1rem; width: 20px;"></i> <strong>${skill.text}</strong></td>
+                    <td><code>${skill.icon}</code></td>
+                    <td>${skill.sort_order}</td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="btn-icon edit-sideskill" data-id="${skill.id}" title="Edit"><i class="fas fa-edit"></i></button>
+                            <button class="btn-icon delete delete-sideskill" data-id="${skill.id}" title="Delete"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            // Listeners
+            tbody.querySelectorAll('.edit-sideskill').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-id');
+                    const item = data.find(s => String(s.id) === String(id));
+                    openSideSkillModal('edit', item);
+                });
+            });
+
+            tbody.querySelectorAll('.delete-sideskill').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-id');
+                    handleSideSkillDelete(id);
+                });
+            });
+
+        } catch (error) {
+            console.error('Render side skills error:', error);
+            showToast('Failed to load side skills', true);
+        }
+    };
+
+    const openSideSkillModal = (mode, item = null) => {
+        const isEdit = mode === 'edit';
+        const title = isEdit ? 'Edit Side Skill' : 'Add Side Skill';
+
+        const content = `
+            <div class="form-group">
+                <label>Skill Name</label>
+                <input type="text" id="skillName" value="${isEdit ? item.text : ''}" placeholder="e.g. Data Entry">
+            </div>
+            <div class="form-group">
+                <label>Icon Class (FontAwesome)</label>
+                <input type="text" id="skillIcon" value="${isEdit ? item.icon : ''}" placeholder="fas fa-table">
+            </div>
+            <div class="form-group">
+                <label>Sort Order</label>
+                <input type="number" id="skillOrder" value="${isEdit ? item.sort_order : '0'}">
+            </div>
+        `;
+
+        window.openModal(title, content, async () => {
+            const text = document.getElementById('skillName').value;
+            const icon = document.getElementById('skillIcon').value;
+            const order = parseInt(document.getElementById('skillOrder').value) || 0;
+
+            if (!text || !icon) {
+                showToast('Skill name and icon are required', true);
+                throw new Error('Missing fields');
+            }
+
+            try {
+                const skillData = {
+                    text,
+                    icon,
+                    sort_order: order
+                };
+
+                let res;
+                if (isEdit) {
+                    res = await window.supabase.from('side_skills').update(skillData).eq('id', item.id);
+                } else {
+                    res = await window.supabase.from('side_skills').insert([skillData]);
+                }
+
+                if (res.error) throw res.error;
+
+                showToast(`Side skill ${isEdit ? 'updated' : 'added'} successfully`);
+                renderSideSkills();
+
+            } catch (error) {
+                console.error('Side skill save error:', error);
+                showToast('Failed to save side skill: ' + error.message, true);
+                throw error;
+            }
+        });
+    };
+
+    const handleSideSkillDelete = async (id) => {
+        const title = 'Confirm Deletion';
+        const content = `<p>Are you sure you want to delete this side skill?</p>`;
+
+        window.openModal(title, content, async () => {
+            try {
+                const { error } = await window.supabase.from('side_skills').delete().eq('id', id);
+                if (error) throw error;
+
+                showToast('Side skill deleted');
+                renderSideSkills();
+            } catch (error) {
+                console.error('Delete error:', error);
+                showToast('Failed to delete side skill', true);
+                throw error;
+            }
+        });
+
+        const btn = document.getElementById('saveModal');
+        if (btn) {
+            btn.textContent = 'Delete';
+            btn.classList.add('btn-danger');
+        }
+    };
+
+    // --- Profile Details ---
+    const initProfilePage = async () => {
+        const form = document.getElementById('profileForm');
+        if (!form) return;
+
+        try {
+            // Fetch current profile data
+            const { data, error } = await window.supabase
+                .from('profile')
+                .select('*')
+                .limit(1)
+                .single();
+
+            if (error && error.code !== 'PGRST116') throw error; 
+
+            if (data) {
+                document.getElementById('profFullName').value = data.full_name || '';
+                document.getElementById('profRole').value = data.role || '';
+                document.getElementById('profLocation').value = data.location || '';
+                document.getElementById('profAboutPrimary').value = data.about_text || '';
+                document.getElementById('profAboutSecondary').value = data.about_text_secondary || '';
+                
+                if (data.profile_image_url) {
+                    const parts = data.profile_image_url.split('/');
+                    document.getElementById('currentImageName').textContent = `Current: ${parts[parts.length - 1]}`;
+                }
+            }
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const saveBtn = form.querySelector('button[type="submit"]');
+                const originalHtml = saveBtn.innerHTML;
+                const fileInput = document.getElementById('profFile');
+                const file = fileInput.files[0];
+
+                try {
+                    saveBtn.disabled = true;
+                    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+                    let imageUrl = data?.profile_image_url || '';
+
+                    if (file) {
+                        // 1. Upload new profile image
+                        const fileName = `images/profile/${Date.now()}-${file.name}`;
+                        const { error: upErr } = await window.supabase.storage
+                            .from('Gallery')
+                            .upload(fileName, file);
+                        
+                        if (upErr) throw upErr;
+
+                        const { data: urlData } = window.supabase.storage
+                            .from('Gallery')
+                            .getPublicUrl(fileName);
+                        
+                        // 2. Delete old image if it exists and is in Supabase storage
+                        if (data?.profile_image_url && data.profile_image_url.includes('storage/v1/object/public/Gallery/')) {
+                            const pathParts = data.profile_image_url.split('/Gallery/');
+                            if (pathParts.length > 1) {
+                                await window.supabase.storage.from('Gallery').remove([pathParts[1]]);
+                            }
+                        }
+
+                        imageUrl = urlData.publicUrl;
+                    }
+
+                    const profileData = {
+                        full_name: document.getElementById('profFullName').value,
+                        role: document.getElementById('profRole').value,
+                        location: document.getElementById('profLocation').value,
+                        profile_image_url: imageUrl,
+                        about_text: document.getElementById('profAboutPrimary').value,
+                        about_text_secondary: document.getElementById('profAboutSecondary').value
+                    };
+
+                    let res;
+                    if (data && data.id) {
+                        res = await window.supabase.from('profile').update(profileData).eq('id', data.id);
+                    } else {
+                        res = await window.supabase.from('profile').insert([profileData]);
+                    }
+
+                    if (res.error) throw res.error;
+
+                    showToast('Profile updated successfully');
+                    if (file) {
+                        const parts = imageUrl.split('/');
+                        document.getElementById('currentImageName').textContent = `Current: ${parts[parts.length - 1]}`;
+                        fileInput.value = ''; // clear input
+                    }
+                } catch (error) {
+                    console.error('Profile save error:', error);
+                    showToast('Failed to save profile: ' + error.message, true);
+                } finally {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = originalHtml;
+                }
+            });
+
+        } catch (error) {
+            console.error('Init profile error:', error);
+            showToast('Failed to load profile data', true);
+        }
+    };
+
+    // --- Specialty Banner ---
+    const initSpecialtyPage = async () => {
+        const form = document.getElementById('specialtyForm');
+        if (!form) return;
+
+        try {
+            const { data, error } = await window.supabase
+                .from('specialty_banner')
+                .select('*')
+                .limit(1)
+                .single();
+
+            if (error && error.code !== 'PGRST116') throw error;
+
+            if (data) {
+                document.getElementById('specTitle').value = data.title || '';
+                document.getElementById('specDesc').value = data.description || '';
+                document.getElementById('specIconMain').value = data.icon_main || '';
+                document.getElementById('specIconHeader').value = data.icon_header || '';
+                document.getElementById('specBtnText').value = data.button_text || '';
+                document.getElementById('specBtnLink').value = data.button_link || '';
+            }
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const saveBtn = form.querySelector('button[type="submit"]');
+                const originalHtml = saveBtn.innerHTML;
+
+                try {
+                    saveBtn.disabled = true;
+                    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+                    const bannerData = {
+                        title: document.getElementById('specTitle').value,
+                        description: document.getElementById('specDesc').value,
+                        icon_main: document.getElementById('specIconMain').value,
+                        icon_header: document.getElementById('specIconHeader').value,
+                        button_text: document.getElementById('specBtnText').value,
+                        button_link: document.getElementById('specBtnLink').value
+                    };
+
+                    let res;
+                    if (data && data.id) {
+                        res = await window.supabase.from('specialty_banner').update(bannerData).eq('id', data.id);
+                    } else {
+                        res = await window.supabase.from('specialty_banner').insert([bannerData]);
+                    }
+
+                    if (res.error) throw res.error;
+
+                    showToast('Specialty banner updated successfully');
+                } catch (error) {
+                    console.error('Specialty banner save error:', error);
+                    showToast('Failed to save banner: ' + error.message, true);
+                } finally {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = originalHtml;
+                }
+            });
+
+        } catch (error) {
+            console.error('Init specialty error:', error);
+            showToast('Failed to load specialty banner data', true);
+        }
+    };
+
+    // --- Contact Messages ---
+    const initMessagesPage = async () => {
+        const btnRefresh = document.getElementById('refreshMessages');
+        if (btnRefresh) {
+            btnRefresh.addEventListener('click', async () => {
+                btnRefresh.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> Refreshing...';
+                await renderMessages();
+                btnRefresh.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+            });
+        }
+        await renderMessages();
+    };
+
+    const renderMessages = async () => {
+        const tbody = document.getElementById('messagesList');
+        if (!tbody) return;
+
+        try {
+            const { data, error } = await window.supabase
+                .from('contact_messages')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No messages found.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(msg => {
+                const date = new Date(msg.created_at).toLocaleDateString(undefined, {
+                    month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
+                return `
+                    <tr>
+                        <td><strong>${msg.name}</strong></td>
+                        <td>${msg.email}</td>
+                        <td>${msg.subject}</td>
+                        <td>${date}</td>
+                        <td>
+                            <div class="action-btns">
+                                <button class="btn-icon view-msg" data-id="${msg.id}" title="Read"><i class="fas fa-eye"></i></button>
+                                <button class="btn-icon delete delete-msg" data-id="${msg.id}" title="Delete"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Listeners
+            tbody.querySelectorAll('.view-msg').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-id');
+                    const item = data.find(m => String(m.id) === String(id));
+                    
+                    const title = `Message from ${item.name}`;
+                    const content = `
+                        <div style="color: var(--text-secondary); margin-bottom: 1rem;">
+                            <p><strong>From:</strong> ${item.name} (${item.email})</p>
+                            <p><strong>Subject:</strong> ${item.subject}</p>
+                            <p><strong>Date:</strong> ${new Date(item.created_at).toLocaleString()}</p>
+                        </div>
+                        <hr style="border: 0; border-top: 1px solid var(--border); margin: 1rem 0;">
+                        <div style="white-space: pre-wrap; line-height: 1.6;">${item.message}</div>
+                    `;
+                    window.openModal(title, content, null); // null means no save button needed
+                    
+                    // Hide save button in the modal since this is just viewing
+                    const saveBtn = document.getElementById('saveModal');
+                    if (saveBtn) saveBtn.style.display = 'none';
+                });
+            });
+
+            tbody.querySelectorAll('.delete-msg').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-id');
+                    handleMessageDelete(id);
+                });
+            });
+
+        } catch (error) {
+            console.error('Render messages error:', error);
+            showToast('Failed to load messages', true);
+        }
+    };
+
+    const handleMessageDelete = async (id) => {
+        const title = 'Confirm Deletion';
+        const content = `<p>Are you sure you want to delete this message?</p>`;
+
+        window.openModal(title, content, async () => {
+            try {
+                const { error } = await window.supabase.from('contact_messages').delete().eq('id', id);
+                if (error) throw error;
+
+                showToast('Message deleted');
+                renderMessages();
+            } catch (error) {
+                console.error('Delete error:', error);
+                showToast('Failed to delete message', true);
+                throw error;
+            }
+        });
+
+        const btn = document.getElementById('saveModal');
+        if (btn) {
+            btn.textContent = 'Delete';
+            btn.classList.add('btn-danger');
+        }
+    };
+
+    // --- Social Links ---
+    const initSocialLinksPage = async () => {
+        const btnAdd = document.getElementById('addSocialBtn');
+        if (btnAdd) {
+            btnAdd.addEventListener('click', () => openSocialLinkModal('add'));
+        }
+        await renderSocialLinks();
+    };
+
+    const renderSocialLinks = async () => {
+        const tbody = document.getElementById('socialLinksList');
+        if (!tbody) return;
+
+        try {
+            const { data, error } = await window.supabase
+                .from('social_links')
+                .select('*')
+                .order('sort_order', { ascending: true });
+
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No social links found.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(link => `
+                <tr>
+                    <td><i class="${link.icon}" style="margin-right: 1rem; width: 20px;"></i> <strong>${link.name}</strong></td>
+                    <td><a href="${link.url}" target="_blank" style="color: var(--blue-primary);">${link.url}</a></td>
+                    <td>${link.sort_order}</td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="btn-icon edit-social" data-id="${link.id}" title="Edit"><i class="fas fa-edit"></i></button>
+                            <button class="btn-icon delete delete-social" data-id="${link.id}" title="Delete"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            // Listeners
+            tbody.querySelectorAll('.edit-social').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-id');
+                    const item = data.find(s => String(s.id) === String(id));
+                    openSocialLinkModal('edit', item);
+                });
+            });
+
+            tbody.querySelectorAll('.delete-social').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-id');
+                    handleSocialLinkDelete(id);
+                });
+            });
+
+        } catch (error) {
+            console.error('Render social links error:', error);
+            showToast('Failed to load social links', true);
+        }
+    };
+
+    const openSocialLinkModal = (mode, item = null) => {
+        const isEdit = mode === 'edit';
+        const title = isEdit ? 'Edit Social Link' : 'Add Social Link';
+
+        const content = `
+            <div class="form-group">
+                <label>Platform Name</label>
+                <input type="text" id="socialName" value="${isEdit ? item.name : ''}" placeholder="e.g. GitHub">
+            </div>
+            <div class="form-group">
+                <label>URL</label>
+                <input type="url" id="socialUrl" value="${isEdit ? item.url : ''}" placeholder="https://github.com/...">
+            </div>
+            <div class="form-group">
+                <label>Icon Class (FontAwesome)</label>
+                <input type="text" id="socialIcon" value="${isEdit ? item.icon : ''}" placeholder="fab fa-github">
+                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.5rem;">e.g. <b>fab fa-linkedin</b>, <b>fab fa-facebook</b></p>
+            </div>
+            <div class="form-group">
+                <label>Sort Order</label>
+                <input type="number" id="socialOrder" value="${isEdit ? item.sort_order : '0'}">
+            </div>
+        `;
+
+        window.openModal(title, content, async () => {
+            const name = document.getElementById('socialName').value;
+            const url = document.getElementById('socialUrl').value;
+            const icon = document.getElementById('socialIcon').value;
+            const order = parseInt(document.getElementById('socialOrder').value) || 0;
+
+            if (!name || !url || !icon) {
+                showToast('All fields are required', true);
+                throw new Error('Missing fields');
+            }
+
+            try {
+                const socialData = {
+                    name,
+                    url,
+                    icon,
+                    sort_order: order
+                };
+
+                let res;
+                if (isEdit) {
+                    res = await window.supabase.from('social_links').update(socialData).eq('id', item.id);
+                } else {
+                    res = await window.supabase.from('social_links').insert([socialData]);
+                }
+
+                if (res.error) throw res.error;
+
+                showToast(`Social link ${isEdit ? 'updated' : 'added'} successfully`);
+                renderSocialLinks();
+
+            } catch (error) {
+                console.error('Social link save error:', error);
+                showToast('Failed to save social link: ' + error.message, true);
+                throw error;
+            }
+        });
+    };
+
+    const handleSocialLinkDelete = async (id) => {
+        const title = 'Confirm Deletion';
+        const content = `<p>Are you sure you want to delete this social link?</p>`;
+
+        window.openModal(title, content, async () => {
+            try {
+                const { error } = await window.supabase.from('social_links').delete().eq('id', id);
+                if (error) throw error;
+
+                showToast('Social link deleted');
+                renderSocialLinks();
+            } catch (error) {
+                console.error('Delete error:', error);
+                showToast('Failed to delete social link', true);
+                throw error;
+            }
+        });
+
+        const btn = document.getElementById('saveModal');
+        if (btn) {
+            btn.textContent = 'Delete';
+            btn.classList.add('btn-danger');
         }
     };
 

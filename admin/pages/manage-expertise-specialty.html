@@ -3,25 +3,36 @@
 </div>
 
 <div class="card">
-    <form class="mock-form">
+    <form id="specialtyForm">
         <div class="form-row">
             <div class="form-group">
                 <label>Title</label>
-                <input type="text" style="width: 100%; padding: 0.75rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary);" value="Experienced in API Integrations">
+                <input type="text" id="specTitle" placeholder="e.g. Experienced in API Integrations">
             </div>
             <div class="form-group">
-                <label>Main Icon Class (Background Icon)</label>
-                <input type="text" style="width: 100%; padding: 0.75rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary);" value="fas fa-cloud-upload-alt">
+                <label>Main Icon (e.g. fas fa-code)</label>
+                <input type="text" id="specIconMain" placeholder="fas fa-code">
             </div>
             <div class="form-group">
-                <label>Small Icon Class (Title Icon)</label>
-                <input type="text" style="width: 100%; padding: 0.75rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary);" value="fas fa-plug">
+                <label>Header Icon (e.g. fas fa-rocket)</label>
+                <input type="text" id="specIconHeader" placeholder="fas fa-rocket">
+            </div>
+        </div>
+
+        <div class="form-row" style="margin-top: 1rem;">
+            <div class="form-group">
+                <label>Button Text</label>
+                <input type="text" id="specBtnText" placeholder="e.g. Start a Project">
+            </div>
+            <div class="form-group">
+                <label>Button Link</label>
+                <input type="text" id="specBtnLink" placeholder="#contact">
             </div>
         </div>
         
         <div class="form-group" style="margin-top: 1.5rem;">
             <label>Description</label>
-            <textarea style="min-height: 100px;">I integrate third-party APIs including Stripe, PayPal, Google Maps, Twilio, SendGrid, and more. From payment processing to communication services, I connect applications with powerful external services.</textarea>
+            <textarea id="specDesc" rows="4" placeholder="Describe your specialty..."></textarea>
         </div>
         
         <div style="margin-top: 2rem; display: flex; justify-content: flex-end;">

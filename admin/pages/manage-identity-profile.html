@@ -3,39 +3,38 @@
 </div>
 
 <div class="card">
-    <form class="mock-form">
+    <form id="profileForm">
         <div class="form-row">
             <div class="form-group">
                 <label>Full Name</label>
-                <div class="input-icon">
-                    <i class="fas fa-user"></i>
-                    <input type="text" value="Marky Vencent L. Juntilla">
-                </div>
+                <input type="text" id="profFullName" placeholder="e.g. Mark Vencent L. Juntilla">
             </div>
             <div class="form-group">
                 <label>Role</label>
-                <div class="input-icon">
-                    <i class="fas fa-briefcase"></i>
-                    <input type="text" value="Web Developer">
-                </div>
+                <input type="text" id="profRole" placeholder="e.g. Full Stack Developer">
             </div>
             <div class="form-group">
                 <label>Location</label>
-                <div class="input-icon">
-                    <i class="fas fa-map-marker-alt"></i>
-                    <input type="text" value="Sulop, Davao del Sur">
-                </div>
+                <input type="text" id="profLocation" placeholder="e.g. Davao del Sur, Philippines">
             </div>
             <div class="form-group">
-                <label>Profile Image URL</label>
-                <div class="input-icon">
-                    <i class="fas fa-image"></i>
-                    <input type="text" value="assets/images/profile/1.jpg">
-                </div>
+                <label>Profile Image</label>
+                <input type="file" id="profFile" accept="image/*">
+                <p id="currentImageName" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.5rem;"></p>
             </div>
         </div>
+
+        <div class="form-group">
+            <label>About Me (Primary Paragraph)</label>
+            <textarea id="profAboutPrimary" rows="4" placeholder="Briefly describe yourself..."></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>About Me (Secondary Paragraph)</label>
+            <textarea id="profAboutSecondary" rows="4" placeholder="Additional details about your journey..."></textarea>
+        </div>
         
-        <div style="margin-top: 2rem; display: flex; justify-content: flex-end;">
+        <div style="margin-top: 1rem; display: flex; justify-content: flex-end;">
             <button type="submit" class="btn btn-success" style="width: auto; padding: 0.75rem 2rem;">
                 <i class="fas fa-save"></i> Save Profile Details
             </button>

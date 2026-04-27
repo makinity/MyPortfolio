@@ -1,6 +1,6 @@
 <div class="page-header">
     <h1 class="page-title">Contact Messages</h1>
-    <button class="btn btn-primary btn-sm"><i class="fas fa-sync-alt"></i> Refresh</button>
+    <button class="btn btn-primary btn-sm" id="refreshMessages"><i class="fas fa-sync-alt"></i> Refresh</button>
 </div>
 
 <div class="card">
@@ -8,7 +8,6 @@
         <table class="admin-table">
             <thead>
                 <tr>
-                    <th>Status</th>
                     <th>Name</th>
                     <th>Email</th>
                     <th>Subject</th>
@@ -16,38 +15,8 @@
                     <th>Actions</th>
                 </tr>
             </thead>
-            <tbody>
-                <tr style="background: rgba(14, 165, 233, 0.05);">
-                    <td><span style="color: var(--blue-primary); font-weight: bold;">New</span></td>
-                    <td>Jane Doe</td>
-                    <td>jane@example.com</td>
-                    <td>Project Inquiry: E-commerce Site</td>
-                    <td>Just now</td>
-                    <td>
-                        <div class="action-btns">
-                            <button class="btn-icon" title="Read Message" onclick="openModal('Message from Jane Doe', `
-                                <p><strong>Email:</strong> jane@example.com</p>
-                                <p><strong>Subject:</strong> Project Inquiry: E-commerce Site</p>
-                                <hr style='border: 0; border-top: 1px solid var(--border); margin: 1rem 0;'>
-                                <p>Hi Mark, I saw your portfolio and I am interested in hiring you to build a full-stack Laravel e-commerce application with Stripe integration. Please let me know your availability.</p>
-                            `)"><i class="fas fa-eye"></i></button>
-                            <button class="btn-icon delete" title="Delete"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td><span style="color: var(--text-secondary);">Read</span></td>
-                    <td>John Smith</td>
-                    <td>john@test.com</td>
-                    <td>Freelance Opportunity</td>
-                    <td>Yesterday</td>
-                    <td>
-                        <div class="action-btns">
-                            <button class="btn-icon" title="Read Message"><i class="fas fa-eye"></i></button>
-                            <button class="btn-icon delete" title="Delete"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </td>
-                </tr>
+            <tbody id="messagesList">
+                <!-- Data will be injected here -->
             </tbody>
         </table>
     </div>

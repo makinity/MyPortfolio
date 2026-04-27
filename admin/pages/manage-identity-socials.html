@@ -1,19 +1,6 @@
 <div class="page-header">
     <h1 class="page-title">Social Links</h1>
-    <button class="btn btn-primary" onclick="openModal('Add Social Link', `
-        <div class='form-group'>
-            <label>Platform Name</label>
-            <input type='text' class='input-icon input' style='width: 100%; padding: 0.75rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary);' placeholder='e.g., Twitter'>
-        </div>
-        <div class='form-group'>
-            <label>URL</label>
-            <input type='url' class='input-icon input' style='width: 100%; padding: 0.75rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary);' placeholder='https://...'>
-        </div>
-        <div class='form-group'>
-            <label>Icon Class (FontAwesome)</label>
-            <input type='text' class='input-icon input' style='width: 100%; padding: 0.75rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary);' placeholder='fab fa-twitter'>
-        </div>
-    `)"><i class="fas fa-plus"></i> Add Link</button>
+    <button class="btn btn-primary" id="addSocialBtn"><i class="fas fa-plus"></i> Add Link</button>
 </div>
 
 <div class="card">
@@ -27,37 +14,8 @@
                     <th>Actions</th>
                 </tr>
             </thead>
-            <tbody>
-                <tr>
-                    <td><i class="fab fa-github" style="width: 20px;"></i> GitHub</td>
-                    <td>https://github.com/makinity</td>
-                    <td>1</td>
-                    <td>
-                        <div class="action-btns">
-                            <button class="btn-icon delete" title="Delete"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td><i class="fab fa-linkedin" style="color: #0077b5; width: 20px;"></i> LinkedIn</td>
-                    <td>https://www.linkedin.com/...</td>
-                    <td>2</td>
-                    <td>
-                        <div class="action-btns">
-                            <button class="btn-icon delete" title="Delete"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td><i class="fab fa-facebook" style="color: #1877f2; width: 20px;"></i> Facebook</td>
-                    <td>https://www.facebook.com/...</td>
-                    <td>3</td>
-                    <td>
-                        <div class="action-btns">
-                            <button class="btn-icon delete" title="Delete"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </td>
-                </tr>
+            <tbody id="socialLinksList">
+                <!-- Data will be injected here -->
             </tbody>
         </table>
     </div>

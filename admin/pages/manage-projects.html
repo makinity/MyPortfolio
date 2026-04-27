@@ -1,6 +1,6 @@
 <div class="page-header">
     <h1 class="page-title">Manage Projects</h1>
-    <button class="btn btn-primary"><i class="fas fa-plus"></i> Add New Project</button>
+    <button class="btn btn-primary" id="addProjectBtn"><i class="fas fa-plus"></i> Add New Project</button>
 </div>
 
 <div class="card">
@@ -15,43 +15,8 @@
                     <th>Actions</th>
                 </tr>
             </thead>
-            <tbody>
-                <tr>
-                    <td><img src="../assets/images/project/1.png" style="width: 50px; height: 30px; object-fit: cover; border-radius: 4px;"></td>
-                    <td>BeanHub</td>
-                    <td>Laravel, MySQL, Stripe API</td>
-                    <td>1</td>
-                    <td>
-                        <div class="action-btns">
-                            <button class="btn-icon" title="Edit"><i class="fas fa-edit"></i></button>
-                            <button class="btn-icon delete" title="Delete"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td><img src="../assets/images/project/6.png" style="width: 50px; height: 30px; object-fit: cover; border-radius: 4px;"></td>
-                    <td>BoardEase Desktop</td>
-                    <td>C#, .NET, Google Map API</td>
-                    <td>2</td>
-                    <td>
-                        <div class="action-btns">
-                            <button class="btn-icon" title="Edit"><i class="fas fa-edit"></i></button>
-                            <button class="btn-icon delete" title="Delete"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td><img src="../assets/images/project/5.png" style="width: 50px; height: 30px; object-fit: cover; border-radius: 4px;"></td>
-                    <td>Portfolio 2026</td>
-                    <td>HTML, CSS, JS</td>
-                    <td>3</td>
-                    <td>
-                        <div class="action-btns">
-                            <button class="btn-icon" title="Edit"><i class="fas fa-edit"></i></button>
-                            <button class="btn-icon delete" title="Delete"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </td>
-                </tr>
+            <tbody id="projectsList">
+                <!-- Data will be injected here -->
             </tbody>
         </table>
     </div>
