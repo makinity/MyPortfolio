@@ -264,12 +264,15 @@
             : 'I could not generate a reply just now.';
     };
     const sendContactMessage = async (formData) => {
-        const accessKey = String(formData.get('access_key') || '').trim();
-        if (!accessKey || accessKey === 'YOUR_WEB3FORMS_ACCESS_KEY') {
-            throw new Error('Set your Web3Forms access key in the hidden access_key field first.');
-        }
+        const isLocal = window.location.hostname === 'localhost' || 
+                        window.location.hostname === '127.0.0.1' || 
+                        window.location.protocol === 'file:';
+                        
+        const finalUrl = isLocal 
+            ? 'http://127.0.0.1:8787/contact' 
+            : 'https://portfolio-chat.makidevportfolio.workers.dev/contact';
 
-        const response = await fetch('https://api.web3forms.com/submit', {
+        const response = await fetch(finalUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -279,16 +282,11 @@
         });
 
         const data = await response.json().catch(() => ({}));
-        const responseMessage =
-            (typeof data.message === 'string' && data.message.trim())
-            || (typeof data?.body?.message === 'string' && data.body.message.trim())
-            || '';
-
-        if (!response.ok || data.success === false) {
-            throw new Error(responseMessage || 'Unable to send your message right now.');
+        if (!response.ok) {
+            throw new Error(data.error || 'Unable to send your message right now.');
         }
 
-        return responseMessage || 'Message sent successfully.';
+        return data.message || 'Message sent successfully.';
     };
 
     if (menuToggle) {

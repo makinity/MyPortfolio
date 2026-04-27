@@ -259,14 +259,16 @@ const handleContactRequest = async (payload, env, corsHeaders) => {
         );
     }
 
-    const lastEvent = await getEmailStatus(env, emailResult.id);
-    console.log("contact_email_accepted", {
-        emailId: emailResult.id,
-        lastEvent,
-        to: env.CONTACT_TO_EMAIL,
-        from: env.CONTACT_FROM_EMAIL,
-        replyTo: email,
-    });
+    // Save to Supabase
+    const supabase = getSupabaseClient(env);
+    if (supabase) {
+        await supabase.from('contact_messages').insert({
+            name: safeName,
+            email: email,
+            subject: `Portfolio Contact: ${safeName}`,
+            message: message
+        });
+    }
 
     return json(
         { message: "Message sent. I will get back to you soon." },
