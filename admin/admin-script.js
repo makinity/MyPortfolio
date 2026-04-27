@@ -63,6 +63,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 initSocialLinksPage();
             } else if (pageName === 'manage-expertise-specialty') {
                 initSpecialtyPage();
+            } else if (pageName === 'manage-expertise-facts') {
+                initQuickFactsPage();
             } else if (pageName === 'manage-system-messages') {
                 initMessagesPage();
             }
@@ -112,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // It's already a full URL
                 } else {
                     // It's a local path like "assets/images/gallery/1.jpg"
-                    // We need to ensure it reaches the root 'assets' folder from 'admin/admin.html'
+                    // We need to ensure it reaches the root 'assets' folder from 'admin/index.html'
                     
                     // Remove leading slash if present to normalize
                     let cleanPath = displayUrl.startsWith('/') ? displayUrl.substring(1) : displayUrl;
@@ -830,6 +832,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     const parts = data.profile_image_url.split('/');
                     document.getElementById('currentImageName').textContent = `Current: ${parts[parts.length - 1]}`;
                 }
+
+                // Show connect button if gmail is not enabled
+                const connectBtn = document.getElementById('connectGmailBtn');
+                if (connectBtn && !data.gmail_enabled) {
+                    connectBtn.style.display = 'flex';
+                } else if (connectBtn) {
+                    connectBtn.innerHTML = `<i class="fas fa-check-circle"></i> Gmail Connected (${data.gmail_email})`;
+                    connectBtn.classList.remove('btn-primary');
+                    connectBtn.classList.add('btn-success');
+                    connectBtn.style.display = 'flex';
+                    connectBtn.style.pointerEvents = 'none';
+                }
             }
 
             form.addEventListener('submit', async (e) => {
@@ -992,32 +1006,66 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!tbody) return;
 
         try {
-            const { data, error } = await window.supabase
+            // 1. Fetch Web Messages
+            const { data: webMessages, error } = await window.supabase
                 .from('contact_messages')
                 .select('*')
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
 
-            if (!data || data.length === 0) {
+            // 2. Fetch Gmail Messages (if enabled)
+            let gmailMessages = [];
+            const { data: profile } = await window.supabase.from('profile').select('gmail_enabled').single();
+            if (profile?.gmail_enabled) {
+                try {
+                    const gRes = await fetch('https://portfolio-chat.makidevportfolio.workers.dev/gmail/list');
+                    const data = await gRes.json();
+                    if (Array.isArray(data)) {
+                        gmailMessages = data;
+                    }
+                } catch (e) { console.error("Gmail fetch failed", e); }
+            }
+
+            // 3. Merge and Sort
+            const allMessages = [
+                ...webMessages.map(m => ({ ...m, source: 'Web Form' })),
+                ...gmailMessages.map(m => ({
+                    id: m.id,
+                    name: m.from.split('<')[0].trim(),
+                    email: m.from.match(/<(.+)>/)?.[1] || m.from,
+                    subject: m.subject,
+                    created_at: m.date,
+                    message: m.snippet,
+                    source: 'Gmail',
+                    isGmail: true,
+                    threadId: m.threadId
+                }))
+            ];
+
+            if (allMessages.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No messages found.</td></tr>';
                 return;
             }
 
-            tbody.innerHTML = data.map(msg => {
+            tbody.innerHTML = allMessages.map(msg => {
                 const date = new Date(msg.created_at).toLocaleDateString(undefined, {
                     month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
                 });
+                const badgeColor = msg.source === 'Gmail' ? '#ea4335' : '#0ea5e9';
                 return `
                     <tr>
-                        <td><strong>${msg.name}</strong></td>
+                        <td>
+                            <span style="background: ${badgeColor}; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; color: white; margin-bottom: 4px; display: inline-block;">${msg.source}</span><br>
+                            <strong>${msg.name}</strong>
+                        </td>
                         <td>${msg.email}</td>
                         <td>${msg.subject}</td>
                         <td>${date}</td>
                         <td>
                             <div class="action-btns">
-                                <button class="btn-icon view-msg" data-id="${msg.id}" title="Read"><i class="fas fa-eye"></i></button>
-                                <button class="btn-icon delete delete-msg" data-id="${msg.id}" title="Delete"><i class="fas fa-trash"></i></button>
+                                <button class="btn-icon view-msg" data-id="${msg.id}" data-source="${msg.source}" title="Read"><i class="fas fa-eye"></i></button>
+                                ${!msg.isGmail ? `<button class="btn-icon delete delete-msg" data-id="${msg.id}" title="Delete"><i class="fas fa-trash"></i></button>` : ''}
                             </div>
                         </td>
                     </tr>
@@ -1028,7 +1076,8 @@ document.addEventListener('DOMContentLoaded', () => {
             tbody.querySelectorAll('.view-msg').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const id = btn.getAttribute('data-id');
-                    const item = data.find(m => String(m.id) === String(id));
+                    const source = btn.getAttribute('data-source');
+                    const item = allMessages.find(m => String(m.id) === String(id) && m.source === source);
                     
                     const title = `Message from ${item.name}`;
                     const content = `
@@ -1038,13 +1087,59 @@ document.addEventListener('DOMContentLoaded', () => {
                             <p><strong>Date:</strong> ${new Date(item.created_at).toLocaleString()}</p>
                         </div>
                         <hr style="border: 0; border-top: 1px solid var(--border); margin: 1rem 0;">
-                        <div style="white-space: pre-wrap; line-height: 1.6;">${item.message}</div>
+                        <div style="white-space: pre-wrap; line-height: 1.6; max-height: 300px; overflow-y: auto; margin-bottom: 1rem;">${item.message}</div>
+                        
+                        <div id="replySection" style="margin-top: 1.5rem; background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
+                            <label style="display: block; margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--blue-primary);"><i class="fas fa-reply"></i> Reply to ${item.name}</label>
+                            <textarea id="replyBody" rows="4" style="width: 100%;" placeholder="Type your reply here..."></textarea>
+                            <div style="display: flex; justify-content: flex-end; margin-top: 0.75rem;">
+                                <button id="btnSendReply" class="btn btn-primary btn-sm" style="width: auto;">
+                                    <i class="fas fa-paper-plane"></i> Send Reply
+                                </button>
+                            </div>
+                        </div>
                     `;
-                    window.openModal(title, content, null); // null means no save button needed
+                    window.openModal(title, content, null);
                     
-                    // Hide save button in the modal since this is just viewing
+                    // Hide default modal save
                     const saveBtn = document.getElementById('saveModal');
                     if (saveBtn) saveBtn.style.display = 'none';
+
+                    // Reply Logic
+                    document.getElementById('btnSendReply').addEventListener('click', async () => {
+                        const replyBody = document.getElementById('replyBody').value;
+                        if (!replyBody) return showToast('Reply cannot be empty', true);
+
+                        const sendBtn = document.getElementById('btnSendReply');
+                        const originalHtml = sendBtn.innerHTML;
+
+                        try {
+                            sendBtn.disabled = true;
+                            sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+
+                            const res = await fetch('https://portfolio-chat.makidevportfolio.workers.dev/gmail/reply', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    to: item.email,
+                                    subject: item.subject,
+                                    message: replyBody,
+                                    threadId: item.isGmail ? item.threadId : null
+                                })
+                            });
+
+                            if (!res.ok) throw new Error("Failed to send email");
+
+                            showToast('Reply sent successfully!');
+                            document.getElementById('adminModal').style.display = 'none';
+                        } catch (e) {
+                            console.error(e);
+                            showToast('Error sending reply', true);
+                        } finally {
+                            sendBtn.disabled = false;
+                            sendBtn.innerHTML = originalHtml;
+                        }
+                    });
                 });
             });
 
@@ -1379,6 +1474,141 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // --- Quick Facts Management ---
+    const initQuickFactsPage = async () => {
+        const btnAdd = document.getElementById('addFactBtn');
+        if (btnAdd) {
+            btnAdd.addEventListener('click', () => openQuickFactModal('add'));
+        }
+        await renderQuickFacts();
+    };
+
+    const renderQuickFacts = async () => {
+        const tbody = document.getElementById('quickFactsList');
+        if (!tbody) return;
+
+        try {
+            const { data, error } = await window.supabase
+                .from('quick_facts')
+                .select('*')
+                .order('sort_order');
+
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No facts found.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(item => `
+                <tr>
+                    <td><i class="${item.icon}" style="color: var(--blue-primary); width: 20px;"></i> ${item.text}</td>
+                    <td><code>${item.icon}</code></td>
+                    <td>${item.sort_order}</td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="btn-icon edit-fact" data-id="${item.id}" title="Edit"><i class="fas fa-edit"></i></button>
+                            <button class="btn-icon delete delete-fact" data-id="${item.id}" title="Delete"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            // Listeners
+            tbody.querySelectorAll('.edit-fact').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-id');
+                    const item = data.find(f => String(f.id) === String(id));
+                    openQuickFactModal('edit', item);
+                });
+            });
+
+            tbody.querySelectorAll('.delete-fact').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-id');
+                    handleQuickFactDelete(id);
+                });
+            });
+
+        } catch (error) {
+            console.error('Render quick facts error:', error);
+            showToast('Failed to load quick facts', true);
+        }
+    };
+
+    const openQuickFactModal = (mode, item = null) => {
+        const isEdit = mode === 'edit';
+        const title = isEdit ? 'Edit Quick Fact' : 'Add Quick Fact';
+
+        const content = `
+            <div class="form-group">
+                <label>Fact Text</label>
+                <input type="text" id="factText" value="${isEdit ? item.text : ''}" placeholder="e.g. Based in Davao del Sur">
+            </div>
+            <div class="form-group">
+                <label>Icon Class (FontAwesome)</label>
+                <input type="text" id="factIcon" value="${isEdit ? item.icon : ''}" placeholder="fas fa-location-dot">
+            </div>
+            <div class="form-group">
+                <label>Sort Order</label>
+                <input type="number" id="factOrder" value="${isEdit ? item.sort_order : '0'}">
+            </div>
+        `;
+
+        window.openModal(title, content, async () => {
+            const text = document.getElementById('factText').value;
+            const icon = document.getElementById('factIcon').value;
+            const order = parseInt(document.getElementById('factOrder').value) || 0;
+
+            if (!text || !icon) {
+                showToast('Please fill in all fields', true);
+                throw new Error('Missing fields');
+            }
+
+            try {
+                let result;
+                if (isEdit) {
+                    result = await window.supabase
+                        .from('quick_facts')
+                        .update({ text, icon, sort_order: order })
+                        .eq('id', item.id);
+                } else {
+                    result = await window.supabase
+                        .from('quick_facts')
+                        .insert([{ text, icon, sort_order: order }]);
+                }
+
+                if (result.error) throw result.error;
+
+                showToast(isEdit ? 'Fact updated!' : 'Fact added successfully!');
+                renderQuickFacts();
+            } catch (error) {
+                console.error('Save fact error:', error);
+                showToast('Save failed: ' + error.message, true);
+                throw error;
+            }
+        });
+    };
+
+    const handleQuickFactDelete = async (id) => {
+        if (!confirm('Are you sure you want to delete this fact?')) return;
+
+        try {
+            const { error } = await window.supabase
+                .from('quick_facts')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+
+            showToast('Fact deleted successfully');
+            renderQuickFacts();
+        } catch (error) {
+            console.error('Delete fact error:', error);
+            showToast('Delete failed: ' + error.message, true);
+        }
+    };
+
     // Navigation Click Handler
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
@@ -1402,4 +1632,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Load default page (Dashboard)
     loadPage('dashboard');
+
+    // Logout Handler
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            if (confirm('Are you sure you want to logout?')) {
+                const { error } = await window.supabase.auth.signOut();
+                if (error) {
+                    console.error('Logout error:', error);
+                    showToast('Logout failed', true);
+                } else {
+                    window.location.href = 'login.html';
+                }
+            }
+        });
+    }
 });

@@ -414,6 +414,147 @@ const handlePortfolioDataRequest = async (env, corsHeaders) => {
     }
 };
 
+const handleGoogleAuth = (env, corsHeaders) => {
+    const scope = 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email';
+    const redirectUri = `https://portfolio-chat.makidevportfolio.workers.dev/auth/google/callback`;
+    const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${env.GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}&access_type=offline&prompt=consent`;
+    
+    return Response.redirect(url, 302);
+};
+
+const handleGoogleCallback = async (url, env, corsHeaders) => {
+    const code = url.searchParams.get('code');
+    const redirectUri = `https://portfolio-chat.makidevportfolio.workers.dev/auth/google/callback`;
+
+    if (!code) return json({ error: "Missing code" }, { status: 400, headers: corsHeaders });
+
+    // Exchange code for tokens
+    const res = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+            code,
+            client_id: env.GOOGLE_CLIENT_ID,
+            client_secret: env.GOOGLE_CLIENT_SECRET,
+            redirect_uri: redirectUri,
+            grant_type: 'authorization_code'
+        })
+    });
+
+    const tokens = await res.json();
+    if (tokens.error) return json(tokens, { status: 400, headers: corsHeaders });
+
+    // Get user email
+    const userRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+        headers: { Authorization: `Bearer ${tokens.access_token}` }
+    });
+    const user = await userRes.json();
+
+    // Save refresh token to Supabase
+    const supabase = getSupabaseClient(env);
+    const { error } = await supabase
+        .from('profile')
+        .update({ 
+            gmail_refresh_token: tokens.refresh_token,
+            gmail_email: user.email,
+            gmail_enabled: true 
+        })
+        .match({ id: (await supabase.from('profile').select('id').limit(1).single()).data.id });
+
+    if (error) return json({ error: error.message }, { status: 500, headers: corsHeaders });
+
+    // Redirect back to local admin
+    return Response.redirect('http://localhost:3000/admin/', 302);
+};
+
+const getGmailAccessToken = async (env, refreshToken) => {
+    const res = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+            client_id: env.GOOGLE_CLIENT_ID,
+            client_secret: env.GOOGLE_CLIENT_SECRET,
+            refresh_token: refreshToken,
+            grant_type: 'refresh_token'
+        })
+    });
+    const data = await res.json();
+    return data.access_token;
+};
+
+const handleGmailList = async (env, corsHeaders) => {
+    const supabase = getSupabaseClient(env);
+    const { data: profile } = await supabase.from('profile').select('gmail_refresh_token').single();
+    
+    if (!profile?.gmail_refresh_token) return json({ error: "Gmail not connected" }, { status: 400, headers: corsHeaders });
+
+    const accessToken = await getGmailAccessToken(env, profile.gmail_refresh_token);
+    
+    // Fetch last 10 messages
+    const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=10&q=is:unread', {
+        headers: { Authorization: `Bearer ${accessToken}` }
+    });
+    const { messages } = await res.json();
+    
+    if (!messages) return json([], { headers: corsHeaders });
+
+    const fullMessages = await Promise.all(messages.map(async (m) => {
+        const detailRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${m.id}`, {
+            headers: { Authorization: `Bearer ${accessToken}` }
+        });
+        const detail = await detailRes.json();
+        
+        const headers = detail.payload.headers;
+        return {
+            id: detail.id,
+            threadId: detail.threadId,
+            snippet: detail.snippet,
+            from: headers.find(h => h.name === 'From')?.value,
+            subject: headers.find(h => h.name === 'Subject')?.value,
+            date: headers.find(h => h.name === 'Date')?.value,
+            isGmail: true
+        };
+    }));
+
+    return json(fullMessages, { headers: corsHeaders });
+};
+
+const handleGmailReply = async (payload, env, corsHeaders) => {
+    const supabase = getSupabaseClient(env);
+    const { data: profile } = await supabase.from('profile').select('gmail_refresh_token, gmail_email').single();
+    
+    if (!profile?.gmail_refresh_token) return json({ error: "Gmail not connected" }, { status: 400, headers: corsHeaders });
+
+    const accessToken = await getGmailAccessToken(env, profile.gmail_refresh_token);
+    
+    const { to, subject, message, threadId } = payload;
+
+    // Construct raw email
+    const email = [
+        `To: ${to}`,
+        `Subject: Re: ${subject}`,
+        `In-Reply-To: ${threadId}`,
+        `References: ${threadId}`,
+        'Content-Type: text/plain; charset="UTF-8"',
+        '',
+        message
+    ].join('\n');
+
+    const encodedEmail = btoa(unescape(encodeURIComponent(email))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+    const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ raw: encodedEmail, threadId })
+    });
+
+    const result = await res.json();
+    return json(result, { headers: corsHeaders });
+};
+
 export default {
     async fetch(request, env) {
         const url = new URL(request.url);
@@ -429,6 +570,16 @@ export default {
                 status: 204,
                 headers: corsHeaders,
             });
+        }
+
+        // New Endpoints
+        if (url.pathname === "/auth/google") return handleGoogleAuth(env, corsHeaders);
+        if (url.pathname === "/auth/google/callback") return handleGoogleCallback(url, env, corsHeaders);
+        if (url.pathname === "/gmail/list") return handleGmailList(env, corsHeaders);
+
+        if (request.method === "POST" && url.pathname === "/gmail/reply") {
+            const payload = await request.json();
+            return handleGmailReply(payload, env, corsHeaders);
         }
 
         if (!["/", "/chat", "/contact", "/portfolio"].includes(url.pathname)) {
