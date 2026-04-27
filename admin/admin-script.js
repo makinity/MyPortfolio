@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Page-specific initialization
             if (pageName === 'dashboard') {
-                initDashboardCharts();
+                initDashboardPage();
             } else if (pageName === 'manage-gallery') {
                 initGalleryPage();
             } else if (pageName === 'manage-projects') {
@@ -308,6 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (dbError) throw dbError;
 
                 showToast('Gallery item and file deleted');
+                await logActivity('Deleted', `Gallery Image: ${item.caption}`);
                 renderGallery(); 
             } catch (error) {
                 console.error('Gallery delete error:', error);
@@ -517,6 +518,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (res.error) throw res.error;
 
                 showToast(`Project ${isEdit ? 'updated' : 'added'} successfully`);
+                await logActivity(isEdit ? 'Updated' : 'Added', `Project: ${projTitle}`);
                 renderProjects();
 
             } catch (error) {
@@ -533,7 +535,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         window.openModal(title, content, async () => {
             try {
-                const { data: item } = await window.supabase.from('projects').select('image_url').eq('id', id).single();
+                const { data: item } = await window.supabase.from('projects').select('image_url, title').eq('id', id).single();
 
                 if (item?.image_url && item.image_url.includes('storage/v1/object/public/Gallery/')) {
                     const pathParts = item.image_url.split('/Gallery/');
@@ -546,6 +548,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (error) throw error;
 
                 showToast('Project deleted');
+                await logActivity('Deleted', `Project: ${item.title}`);
                 renderProjects();
             } catch (error) {
                 console.error('Delete error:', error);
@@ -704,6 +707,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (res.error) throw res.error;
 
                 showToast(`Tech stack ${isEdit ? 'updated' : 'added'} successfully`);
+                await logActivity(isEdit ? 'Updated' : 'Added', `Tech Stack: ${name}`);
                 renderTechStack();
 
             } catch (error) {
@@ -714,7 +718,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    const handleTechStackDelete = async (id) => {
+    const handleTechStackDelete = async (id, techName) => {
         const title = 'Confirm Deletion';
         const content = `<p>Are you sure you want to delete this tech stack item?</p>`;
 
@@ -724,6 +728,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (error) throw error;
 
                 showToast('Tech stack item deleted');
+                await logActivity('Deleted', `Tech Stack: ${techName}`);
                 renderTechStack();
             } catch (error) {
                 console.error('Delete error:', error);
@@ -1045,6 +1050,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (res.error) throw res.error;
 
                     showToast('Specialty banner updated successfully');
+                    await logActivity('Updated', 'Specialty Banner');
                 } catch (error) {
                     console.error('Specialty banner save error:', error);
                     showToast('Failed to save banner: ' + error.message, true);
@@ -1542,9 +1548,93 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // Chart Initialization (Mock Data)
+    // Helper to log activity
+    const logActivity = async (action, item) => {
+        try {
+            await window.supabase.from('activity_logs').insert([{ action, item }]);
+        } catch (err) {
+            console.error('Failed to log activity:', err);
+        }
+    };
+
+    // Dashboard Page Logic
+    const initDashboardPage = async () => {
+        const refreshBtn = document.getElementById('refreshDashboard');
+        if (refreshBtn) {
+            refreshBtn.onclick = () => {
+                const icon = refreshBtn.querySelector('i');
+                icon.classList.add('fa-spin');
+                Promise.all([renderDashboardStats(), renderRecentActivity(), initDashboardCharts()])
+                    .finally(() => setTimeout(() => icon.classList.remove('fa-spin'), 600));
+            };
+        }
+
+        await Promise.all([renderDashboardStats(), renderRecentActivity(), initDashboardCharts()]);
+    };
+
+    const renderDashboardStats = async () => {
+        try {
+            const [projects, gallery, tech, messages] = await Promise.all([
+                window.supabase.from('projects').select('*', { count: 'exact', head: true }),
+                window.supabase.from('gallery').select('*', { count: 'exact', head: true }),
+                window.supabase.from('tech_stack').select('*', { count: 'exact', head: true }),
+                window.supabase.from('contact_messages').select('*', { count: 'exact', head: true }).eq('status', 'unread')
+            ]);
+
+            document.getElementById('statTotalProjects').textContent = projects.count || 0;
+            document.getElementById('statTotalGallery').textContent = gallery.count || 0;
+            document.getElementById('statTotalTech').textContent = tech.count || 0;
+            document.getElementById('statUnreadMessages').textContent = messages.count || 0;
+        } catch (err) {
+            console.error('Failed to fetch dashboard stats:', err);
+        }
+    };
+
+    const renderRecentActivity = async () => {
+        const tbody = document.getElementById('recentActivityBody');
+        if (!tbody) return;
+
+        try {
+            const { data, error } = await window.supabase
+                .from('activity_logs')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(10);
+
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No recent activity.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(log => {
+                let colorClass = 'var(--blue-primary)';
+                let iconClass = 'fa-edit';
+                
+                if (log.action === 'Added') { colorClass = 'var(--success)'; iconClass = 'fa-plus-circle'; }
+                if (log.action === 'Deleted') { colorClass = 'var(--danger)'; iconClass = 'fa-trash'; }
+
+                const date = new Date(log.created_at);
+                const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                return `
+                    <tr>
+                        <td><span style="color: ${colorClass}; font-weight: 500;"><i class="fas ${iconClass}"></i> ${log.action}</span></td>
+                        <td>${log.item}</td>
+                        <td style="color: var(--text-secondary); font-size: 0.9rem;">${dateStr}</td>
+                    </tr>
+                `;
+            }).join('');
+        } catch (err) {
+            console.error('Failed to fetch activity logs:', err);
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--danger);">Failed to load activity.</td></tr>';
+        }
+    };
+
+    // Chart Initialization (Real Data)
     let dashboardCharts = []; // Keep track to destroy old ones
-    const initDashboardCharts = () => {
+    const initDashboardCharts = async () => {
         // Destroy existing charts to prevent memory leaks or overlay issues
         dashboardCharts.forEach(c => c.destroy());
         dashboardCharts = [];
@@ -1553,60 +1643,112 @@ document.addEventListener('DOMContentLoaded', () => {
         Chart.defaults.color = '#94a3b8';
         Chart.defaults.scale.grid.color = 'rgba(255, 255, 255, 0.05)';
 
-        // 1. Line Chart (Views)
-        const viewsCtx = document.getElementById('viewsChart');
-        if (viewsCtx) {
-            const viewsChart = new Chart(viewsCtx, {
-                type: 'line',
-                data: {
-                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                    datasets: [{
-                        label: 'Profile Views',
-                        data: [65, 89, 120, 150, 130, 200],
-                        borderColor: '#0ea5e9',
-                        backgroundColor: 'rgba(14, 165, 233, 0.1)',
-                        borderWidth: 2,
-                        tension: 0.4,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } }
-                }
-            });
-            dashboardCharts.push(viewsChart);
-        }
+        try {
+            // 1. Line Chart (Messages Received)
+            const { data: messages } = await window.supabase.from('contact_messages').select('created_at');
+            
+            const monthCounts = { 'Jan': 0, 'Feb': 0, 'Mar': 0, 'Apr': 0, 'May': 0, 'Jun': 0, 'Jul': 0, 'Aug': 0, 'Sep': 0, 'Oct': 0, 'Nov': 0, 'Dec': 0 };
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            
+            if (messages) {
+                messages.forEach(msg => {
+                    const date = new Date(msg.created_at);
+                    const month = monthNames[date.getMonth()];
+                    monthCounts[month]++;
+                });
+            }
+            
+            // Last 6 months including current
+            const currentDate = new Date();
+            const currentMonthIdx = currentDate.getMonth();
+            const labelsLine = [];
+            const dataLine = [];
+            
+            for (let i = 5; i >= 0; i--) {
+                let mIdx = currentMonthIdx - i;
+                if (mIdx < 0) mIdx += 12;
+                const mName = monthNames[mIdx];
+                labelsLine.push(mName);
+                dataLine.push(monthCounts[mName]);
+            }
 
-        // 2. Doughnut Chart (Tech Stack)
-        const techCtx = document.getElementById('techChart');
-        if (techCtx) {
-            const techChart = new Chart(techCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['React', 'Laravel', 'C#', 'Python'],
-                    datasets: [{
-                        data: [4, 2, 1, 1],
-                        backgroundColor: [
-                            '#0ea5e9', // Blue
-                            '#ef4444', // Red
-                            '#22c55e', // Green
-                            '#f59e0b'  // Yellow
-                        ],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '70%',
-                    plugins: {
-                        legend: { position: 'right' }
+            const viewsCtx = document.getElementById('viewsChart');
+            if (viewsCtx) {
+                const viewsChart = new Chart(viewsCtx, {
+                    type: 'line',
+                    data: {
+                        labels: labelsLine,
+                        datasets: [{
+                            label: 'Messages',
+                            data: dataLine,
+                            borderColor: '#0ea5e9',
+                            backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } }
                     }
-                }
-            });
-            dashboardCharts.push(techChart);
+                });
+                dashboardCharts.push(viewsChart);
+            }
+
+            // 2. Doughnut Chart (Tech Stack Distribution)
+            const { data: projects } = await window.supabase.from('projects').select('tags');
+            const tagCounts = {};
+            
+            if (projects) {
+                projects.forEach(p => {
+                    if (Array.isArray(p.tags)) {
+                        p.tags.forEach(tag => {
+                            const t = tag.trim();
+                            if (t) {
+                                tagCounts[t] = (tagCounts[t] || 0) + 1;
+                            }
+                        });
+                    }
+                });
+            }
+            
+            // Sort and get top 4 tags
+            const sortedTags = Object.entries(tagCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 4);
+                
+            let labelsDoughnut = ['No Data'];
+            let dataDoughnut = [1];
+            if (sortedTags.length > 0) {
+                labelsDoughnut = sortedTags.map(item => item[0]);
+                dataDoughnut = sortedTags.map(item => item[1]);
+            }
+
+            const techCtx = document.getElementById('techChart');
+            if (techCtx) {
+                const techChart = new Chart(techCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labelsDoughnut,
+                        datasets: [{
+                            data: dataDoughnut,
+                            backgroundColor: ['#0ea5e9', '#ef4444', '#22c55e', '#f59e0b'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '70%',
+                        plugins: { legend: { position: 'right' } }
+                    }
+                });
+                dashboardCharts.push(techChart);
+            }
+        } catch (error) {
+            console.error('Failed to load chart data:', error);
         }
     };
 
