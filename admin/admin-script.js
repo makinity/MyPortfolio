@@ -90,16 +90,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            grid.innerHTML = data.map(item => `
-                <div class="card" style="padding: 1rem; position: relative;">
-                    <img src="${item.image_url}" style="width: 100%; height: 150px; object-fit: cover; border-radius: 6px; margin-bottom: 0.5rem;" onerror="this.src='../assets/images/placeholder.png'">
-                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${item.caption}">${item.caption || 'No caption'}</p>
-                    <div class="action-btns" style="justify-content: flex-end; border-top: 1px solid var(--border); padding-top: 0.5rem;">
-                        <button class="btn-icon edit-gallery" data-id="${item.id}" title="Edit"><i class="fas fa-edit"></i></button>
-                        <button class="btn-icon delete delete-gallery" data-id="${item.id}" title="Delete"><i class="fas fa-trash"></i></button>
+            grid.innerHTML = data.map(item => {
+                // Fix pathing for admin view
+                let displayUrl = item.image_url || '';
+                if (displayUrl && !displayUrl.startsWith('http') && !displayUrl.startsWith('blob:') && !displayUrl.startsWith('data:')) {
+                    displayUrl = '../' + displayUrl;
+                }
+
+                return `
+                    <div class="card" style="padding: 1rem; position: relative;">
+                        <img src="${displayUrl}" style="width: 100%; height: 150px; object-fit: cover; border-radius: 6px; margin-bottom: 0.5rem;" onerror="this.src='../assets/images/placeholder.png'">
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${item.caption}">${item.caption || 'No caption'}</p>
+                        <div class="action-btns" style="justify-content: flex-end; border-top: 1px solid var(--border); padding-top: 0.5rem;">
+                            <button class="btn-icon edit-gallery" data-id="${item.id}" title="Edit"><i class="fas fa-edit"></i></button>
+                            <button class="btn-icon delete delete-gallery" data-id="${item.id}" title="Delete"><i class="fas fa-trash"></i></button>
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
 
             // Attach listeners to newly rendered buttons
             grid.querySelectorAll('.edit-gallery').forEach(btn => {
@@ -129,10 +137,28 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const content = `
             <form id="galleryForm" class="modal-form">
-                <div class="form-group">
-                    <label for="imgUrl">Image URL</label>
-                    <input type="url" id="imgUrl" value="${isEdit ? item.image_url : ''}" placeholder="https://example.com/image.jpg" required style="width: 100%; padding: 0.75rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary);">
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label>Image Source</label>
+                    <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="radio" name="sourceType" value="file" ${!isEdit ? 'checked' : ''}> File Upload
+                        </label>
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="radio" name="sourceType" value="url" ${isEdit ? 'checked' : ''}> External URL
+                        </label>
+                    </div>
                 </div>
+
+                <div id="fileSourceGroup" class="form-group" style="display: ${!isEdit ? 'block' : 'none'};">
+                    <label for="imgFile">Select Image File</label>
+                    <input type="file" id="imgFile" accept="image/*" style="width: 100%; padding: 0.5rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary);">
+                </div>
+
+                <div id="urlSourceGroup" class="form-group" style="display: ${isEdit ? 'block' : 'none'}; margin-top: 1rem;">
+                    <label for="imgUrl">Image URL</label>
+                    <input type="url" id="imgUrl" value="${isEdit ? item.image_url : ''}" placeholder="https://example.com/image.jpg" style="width: 100%; padding: 0.75rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary);">
+                </div>
+
                 <div class="form-group" style="margin-top: 1rem;">
                     <label for="imgCaption">Caption</label>
                     <textarea id="imgCaption" placeholder="Brief description..." style="width: 100%; padding: 0.75rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); resize: vertical; min-height: 80px;">${isEdit ? item.caption : ''}</textarea>
@@ -141,12 +167,46 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
 
         window.openModal(title, content, async () => {
-            const imageUrl = document.getElementById('imgUrl').value;
+            const sourceType = document.querySelector('input[name="sourceType"]:checked').value;
             const caption = document.getElementById('imgCaption').value;
-            
-            if (!imageUrl) {
-                showToast('Image URL is required', true);
-                return;
+            let imageUrl = '';
+
+            if (sourceType === 'file') {
+                const fileInput = document.getElementById('imgFile');
+                const file = fileInput.files[0];
+                
+                if (!file && !isEdit) {
+                    showToast('Please select a file to upload', true);
+                    throw new Error('No file selected');
+                }
+
+                if (file) {
+                    // Upload to Supabase Storage - matching your 'Gallery' bucket and folder structure
+                    const fileName = `images/gallery/${Date.now()}-${file.name}`;
+                    const { data: uploadData, error: uploadError } = await window.supabase.storage
+                        .from('Gallery')
+                        .upload(fileName, file);
+
+                    if (uploadError) {
+                        showToast('Upload failed: ' + uploadError.message, true);
+                        throw uploadError;
+                    }
+
+                    // Get Public URL
+                    const { data: urlData } = window.supabase.storage
+                        .from('Gallery')
+                        .getPublicUrl(fileName);
+                    
+                    imageUrl = urlData.publicUrl;
+                } else if (isEdit) {
+                    imageUrl = item.image_url; // Keep existing
+                }
+            } else {
+                imageUrl = document.getElementById('imgUrl').value;
+                if (!imageUrl) {
+                    showToast('Image URL is required', true);
+                    throw new Error('URL required');
+                }
             }
 
             try {
@@ -165,11 +225,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (result.error) throw result.error;
 
                 showToast(isEdit ? 'Gallery item updated!' : 'Image uploaded successfully!');
-                renderGallery(); // Refresh the grid
+                renderGallery(); 
             } catch (error) {
                 console.error('Gallery save error:', error);
                 showToast('Failed to save gallery item', true);
+                throw error;
             }
+        });
+
+        // Toggle source groups
+        const radios = document.querySelectorAll('input[name="sourceType"]');
+        radios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                document.getElementById('fileSourceGroup').style.display = e.target.value === 'file' ? 'block' : 'none';
+                document.getElementById('urlSourceGroup').style.display = e.target.value === 'url' ? 'block' : 'none';
+            });
         });
     };
 
@@ -189,10 +259,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (error) throw error;
 
                 showToast('Gallery item deleted');
-                renderGallery(); // Refresh the grid
+                renderGallery(); 
             } catch (error) {
                 console.error('Gallery delete error:', error);
                 showToast('Failed to delete item', true);
+                throw error;
             }
         });
         
@@ -215,25 +286,39 @@ document.addEventListener('DOMContentLoaded', () => {
     window.openModal = function(title, contentHtml, onSaveCallback) {
         if (!adminModal) return;
         
-        // Reset global save button reference state before cloning
         const btn = document.getElementById('saveModal');
         if (btn) {
             btn.textContent = 'Save';
-            btn.className = 'btn btn-primary btn-sm'; // Reset to default classes
+            btn.className = 'btn btn-primary btn-sm';
+            btn.disabled = false;
         }
 
         modalTitle.textContent = title;
         modalBody.innerHTML = contentHtml;
         adminModal.classList.add('show');
         
-        // Re-get the button after reset and clone it to clear listeners
         const currentBtn = document.getElementById('saveModal');
         const newSaveBtn = currentBtn.cloneNode(true);
         currentBtn.parentNode.replaceChild(newSaveBtn, currentBtn);
         
-        newSaveBtn.addEventListener('click', () => {
-            if (onSaveCallback) onSaveCallback();
-            closeModal();
+        newSaveBtn.addEventListener('click', async () => {
+            const originalText = newSaveBtn.innerHTML;
+            newSaveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            newSaveBtn.disabled = true;
+
+            try {
+                if (onSaveCallback) await onSaveCallback();
+                closeModal();
+            } catch (error) {
+                console.error('Modal action error:', error);
+                // toast is handled in callback
+            } finally {
+                const finalBtn = document.getElementById('saveModal');
+                if (finalBtn) {
+                    finalBtn.innerHTML = originalText;
+                    finalBtn.disabled = false;
+                }
+            }
         });
     };
 
