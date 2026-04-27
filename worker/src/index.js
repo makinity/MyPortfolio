@@ -520,9 +520,9 @@ const handleGmailList = async (env, corsHeaders) => {
 
     const accessToken = await getGmailAccessToken(env, profile.gmail_refresh_token);
     
-    // Fetch last 10 messages related to portfolio
+    // Fetch last 50 messages related to portfolio
     const query = encodeURIComponent('subject:("Portfolio Contact" OR "New portfolio contact form submission")');
-    const res = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=10&q=${query}`, {
+    const res = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=50&q=${query}`, {
         headers: { Authorization: `Bearer ${accessToken}` }
     });
     const { messages } = await res.json();

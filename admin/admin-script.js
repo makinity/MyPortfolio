@@ -80,8 +80,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    let currentGalleryPage = 1;
+    let currentProjectsPage = 1;
+    let currentTechPage = 1;
+    const adminPageSize = 10;
+
     // --- Gallery Management ---
-    const initGalleryPage = async () => {
+    const initGalleryPage = async (page = 1) => {
+        currentGalleryPage = page;
         const btnUpload = document.getElementById('btnUploadImage');
         if (btnUpload) {
             btnUpload.addEventListener('click', () => openGalleryModal('add'));
@@ -106,29 +112,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            grid.innerHTML = data.map(item => {
-                let displayUrl = item.image_url || '';
-                
-                // If it's a Supabase URL (starts with http), use it directly
-                if (displayUrl.startsWith('http') || displayUrl.startsWith('blob:') || displayUrl.startsWith('data:')) {
-                    // It's already a full URL
-                } else {
-                    // It's a local path like "assets/images/gallery/1.jpg"
-                    // We need to ensure it reaches the root 'assets' folder from 'admin/index.html'
-                    
-                    // Remove leading slash if present to normalize
-                    let cleanPath = displayUrl.startsWith('/') ? displayUrl.substring(1) : displayUrl;
-                    
-                    // If it already starts with 'assets/', we just need to go up one level
-                    if (cleanPath.startsWith('assets/')) {
-                        displayUrl = '../' + cleanPath;
-                    } else {
-                        // If it's just "images/...", prepend "../assets/"
-                        displayUrl = '../assets/' + cleanPath;
-                    }
-                }
+            // Pagination Logic
+            const totalItems = data.length;
+            const totalPages = Math.ceil(totalItems / adminPageSize);
+            const startIndex = (currentGalleryPage - 1) * adminPageSize;
+            const paginatedData = data.slice(startIndex, startIndex + adminPageSize);
 
-                console.log(`Rendering Item ${item.id} with path:`, displayUrl);
+            grid.innerHTML = paginatedData.map(item => {
+                let displayUrl = item.image_url || '';
+                if (!(displayUrl.startsWith('http') || displayUrl.startsWith('blob:') || displayUrl.startsWith('data:'))) {
+                    let cleanPath = displayUrl.startsWith('/') ? displayUrl.substring(1) : displayUrl;
+                    displayUrl = cleanPath.startsWith('assets/') ? '../' + cleanPath : '../assets/' + cleanPath;
+                }
 
                 return `
                     <div class="card" style="padding: 1rem; position: relative;">
@@ -148,7 +143,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
             }).join('');
 
-            // Attach listeners to newly rendered buttons
+            // Add Pagination Controls
+            let paginationHtml = `
+                <div class="pagination-controls" style="grid-column: 1/-1; display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 8px;">
+                    <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                        Showing ${startIndex + 1} to ${Math.min(startIndex + adminPageSize, totalItems)} of ${totalItems} items
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-sm" id="prevGallery" ${currentGalleryPage === 1 ? 'disabled' : ''}>
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </button>
+                        <button class="btn btn-sm" id="nextGallery" ${currentGalleryPage === totalPages ? 'disabled' : ''}>
+                            Next <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            grid.insertAdjacentHTML('beforeend', paginationHtml);
+
+            document.getElementById('prevGallery')?.addEventListener('click', () => initGalleryPage(currentGalleryPage - 1));
+            document.getElementById('nextGallery')?.addEventListener('click', () => initGalleryPage(currentGalleryPage + 1));
+
+            // Attach listeners
             grid.querySelectorAll('.edit-gallery').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const id = btn.getAttribute('data-id');
@@ -309,7 +325,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- Projects Management ---
-    const initProjectsPage = async () => {
+    const initProjectsPage = async (page = 1) => {
+        currentProjectsPage = page;
         const btnAdd = document.getElementById('addProjectBtn');
         if (btnAdd) {
             btnAdd.addEventListener('click', () => openProjectModal('add'));
@@ -334,13 +351,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            tbody.innerHTML = data.map(project => {
+            // Pagination Logic
+            const totalItems = data.length;
+            const totalPages = Math.ceil(totalItems / adminPageSize);
+            const startIndex = (currentProjectsPage - 1) * adminPageSize;
+            const paginatedData = data.slice(startIndex, startIndex + adminPageSize);
+
+            tbody.innerHTML = paginatedData.map(project => {
                 let displayUrl = project.image_url || '';
-                
-                // Path normalization
-                if (displayUrl.startsWith('http') || displayUrl.startsWith('blob:') || displayUrl.startsWith('data:')) {
-                    // OK
-                } else {
+                if (!(displayUrl.startsWith('http') || displayUrl.startsWith('blob:') || displayUrl.startsWith('data:'))) {
                     let cleanPath = displayUrl.startsWith('/') ? displayUrl.substring(1) : displayUrl;
                     displayUrl = cleanPath.startsWith('assets/') ? '../' + cleanPath : '../assets/' + cleanPath;
                 }
@@ -361,16 +380,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
             }).join('');
 
+            // Add Pagination Controls
+            let paginationHtml = `
+                <div class="pagination-controls" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 8px;">
+                    <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                        Showing ${startIndex + 1} to ${Math.min(startIndex + adminPageSize, totalItems)} of ${totalItems} projects
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-sm" id="prevProjects" ${currentProjectsPage === 1 ? 'disabled' : ''}>
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </button>
+                        <button class="btn btn-sm" id="nextProjects" ${currentProjectsPage === totalPages ? 'disabled' : ''}>
+                            Next <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            const existingPagination = document.querySelector('.pagination-controls');
+            if (existingPagination) existingPagination.remove();
+            
+            const cardElement = tbody.closest('.card');
+            if (cardElement) {
+                cardElement.insertAdjacentHTML('afterend', paginationHtml);
+            }
+
+            document.getElementById('prevProjects')?.addEventListener('click', () => initProjectsPage(currentProjectsPage - 1));
+            document.getElementById('nextProjects')?.addEventListener('click', () => initProjectsPage(currentProjectsPage + 1));
+
             // Listeners
             tbody.querySelectorAll('.edit-project').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const id = btn.getAttribute('data-id');
                     const item = data.find(p => String(p.id) === String(id));
-                    if (item) {
-                        openProjectModal('edit', item);
-                    } else {
-                        showToast('Project not found', true);
-                    }
+                    if (item) openProjectModal('edit', item);
                 });
             });
 
@@ -520,7 +562,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- Core Tech Stack ---
-    const initTechStackPage = async () => {
+    const initTechStackPage = async (page = 1) => {
+        currentTechPage = page;
         const btnAdd = document.getElementById('addTechBtn');
         if (btnAdd) {
             btnAdd.addEventListener('click', () => openTechStackModal('add'));
@@ -545,7 +588,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            tbody.innerHTML = data.map(tech => `
+            // Pagination Logic
+            const totalItems = data.length;
+            const totalPages = Math.ceil(totalItems / adminPageSize);
+            const startIndex = (currentTechPage - 1) * adminPageSize;
+            const paginatedData = data.slice(startIndex, startIndex + adminPageSize);
+
+            tbody.innerHTML = paginatedData.map(tech => `
                 <tr>
                     <td><i class="${tech.icon_url}" style="margin-right: 1rem; width: 20px;"></i> <strong>${tech.name}</strong></td>
                     <td><code>${tech.icon_url}</code></td>
@@ -558,6 +607,33 @@ document.addEventListener('DOMContentLoaded', () => {
                     </td>
                 </tr>
             `).join('');
+
+            // Add Pagination Controls
+            let paginationHtml = `
+                <div class="pagination-controls" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 8px;">
+                    <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                        Showing ${startIndex + 1} to ${Math.min(startIndex + adminPageSize, totalItems)} of ${totalItems} items
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-sm" id="prevTech" ${currentTechPage === 1 ? 'disabled' : ''}>
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </button>
+                        <button class="btn btn-sm" id="nextTech" ${currentTechPage === totalPages ? 'disabled' : ''}>
+                            Next <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            const existingPagination = document.querySelector('.pagination-controls');
+            if (existingPagination) existingPagination.remove();
+            
+            const cardElement = tbody.closest('.card');
+            if (cardElement) {
+                cardElement.insertAdjacentHTML('afterend', paginationHtml);
+            }
+
+            document.getElementById('prevTech')?.addEventListener('click', () => initTechStackPage(currentTechPage - 1));
+            document.getElementById('nextTech')?.addEventListener('click', () => initTechStackPage(currentTechPage + 1));
 
             // Listeners
             tbody.querySelectorAll('.edit-tech').forEach(btn => {
@@ -1001,6 +1077,18 @@ document.addEventListener('DOMContentLoaded', () => {
         await renderMessages();
     };
 
+    let currentMessagePage = 1;
+    const messagePageSize = 10;
+
+    const loadMessages = async (page = 1) => {
+        currentMessagePage = page;
+        const tbody = document.getElementById('messagesList');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem;"><i class="fas fa-spinner fa-spin"></i> Loading messages...</td></tr>';
+        }
+        await renderMessages();
+    };
+
     const renderMessages = async () => {
         const tbody = document.getElementById('messagesList');
         if (!tbody) return;
@@ -1028,11 +1116,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // 3. Merge and Sort
-            const allMessages = [
+            let allMessages = [
                 ...webMessages.map(m => ({ ...m, source: 'Web Form' })),
                 ...gmailMessages.map(m => ({
                     id: m.id,
-                    name: m.from.split('<')[0].trim(),
+                    name: m.from.split('<')[0].replace(/"/g, '').trim(),
                     email: m.from.match(/<(.+)>/)?.[1] || m.from,
                     subject: m.subject,
                     created_at: m.date,
@@ -1043,12 +1131,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 }))
             ];
 
-            if (allMessages.length === 0) {
+            // Sort by date descending
+            allMessages.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            // Pagination Logic
+            const totalMessages = allMessages.length;
+            const totalPages = Math.ceil(totalMessages / messagePageSize);
+            const startIndex = (currentMessagePage - 1) * messagePageSize;
+            const paginatedMessages = allMessages.slice(startIndex, startIndex + messagePageSize);
+
+            if (paginatedMessages.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No messages found.</td></tr>';
                 return;
             }
 
-            tbody.innerHTML = allMessages.map(msg => {
+            tbody.innerHTML = paginatedMessages.map(msg => {
                 const date = new Date(msg.created_at).toLocaleDateString(undefined, {
                     month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
                 });
@@ -1071,6 +1168,34 @@ document.addEventListener('DOMContentLoaded', () => {
                     </tr>
                 `;
             }).join('');
+
+            // Add Pagination Controls
+            let paginationHtml = `
+                <div class="pagination-controls" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 8px;">
+                    <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                        Showing ${startIndex + 1} to ${Math.min(startIndex + messagePageSize, totalMessages)} of ${totalMessages} messages
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-sm" id="prevPage" ${currentMessagePage === 1 ? 'disabled' : ''} style="padding: 0.4rem 0.8rem;">
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </button>
+                        <button class="btn btn-sm" id="nextPage" ${currentMessagePage === totalPages ? 'disabled' : ''} style="padding: 0.4rem 0.8rem;">
+                            Next <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            const existingPagination = document.querySelector('.pagination-controls');
+            if (existingPagination) existingPagination.remove();
+            
+            const cardElement = tbody.closest('.card');
+            if (cardElement) {
+                cardElement.insertAdjacentHTML('afterend', paginationHtml);
+            }
+
+            document.getElementById('prevPage')?.addEventListener('click', () => loadMessages(currentMessagePage - 1));
+            document.getElementById('nextPage')?.addEventListener('click', () => loadMessages(currentMessagePage + 1));
 
             // Listeners
             tbody.querySelectorAll('.view-msg').forEach(btn => {
