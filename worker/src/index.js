@@ -400,7 +400,7 @@ const handlePortfolioDataRequest = async (env, corsHeaders) => {
             supabase.from('social_links').select('*').order('sort_order'),
             supabase.from('quick_facts').select('*').order('sort_order'),
             supabase.from('side_skills').select('*').order('sort_order'),
-            supabase.from('specialty').select('*').limit(1).single()
+            supabase.from('specialty_banner').select('*').limit(1).single()
         ]);
 
         return json(
@@ -412,7 +412,11 @@ const handlePortfolioDataRequest = async (env, corsHeaders) => {
                 social_links: social_links.data,
                 quick_facts: quick_facts.data,
                 side_skills: side_skills.data,
-                specialty: specialty.data
+                specialty: specialty.data ? {
+                    ...specialty.data,
+                    main_icon: specialty.data.icon_main,
+                    small_icon: specialty.data.icon_header
+                } : null
             },
             { status: 200, headers: corsHeaders }
         );

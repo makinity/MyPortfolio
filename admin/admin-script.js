@@ -1017,8 +1017,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('specDesc').value = data.description || '';
                 document.getElementById('specIconMain').value = data.icon_main || '';
                 document.getElementById('specIconHeader').value = data.icon_header || '';
-                document.getElementById('specBtnText').value = data.button_text || '';
-                document.getElementById('specBtnLink').value = data.button_link || '';
             }
 
             form.addEventListener('submit', async (e) => {
@@ -1034,9 +1032,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         title: document.getElementById('specTitle').value,
                         description: document.getElementById('specDesc').value,
                         icon_main: document.getElementById('specIconMain').value,
-                        icon_header: document.getElementById('specIconHeader').value,
-                        button_text: document.getElementById('specBtnText').value,
-                        button_link: document.getElementById('specBtnLink').value
+                        icon_header: document.getElementById('specIconHeader').value
                     };
 
                     let res;
@@ -1060,7 +1056,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error('Init specialty error:', error);
-            showToast('Failed to load specialty banner data', true);
+            showToast('Failed to load specialty: ' + (error.message || 'Unknown error'), true);
         }
     };
 
