@@ -46,9 +46,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // Re-attach any form event listeners loaded from the new HTML
             attachFormListeners();
             
-            // Initialize Dashboard Charts if we loaded the dashboard
+            // Page-specific initialization
             if (pageName === 'dashboard') {
                 initDashboardCharts();
+            } else if (pageName === 'manage-gallery') {
+                initGalleryPage();
             }
             
         } catch (error) {
@@ -62,6 +64,146 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // --- Gallery Management ---
+    const initGalleryPage = async () => {
+        const btnUpload = document.getElementById('btnUploadImage');
+        if (btnUpload) {
+            btnUpload.addEventListener('click', () => openGalleryModal('add'));
+        }
+        await renderGallery();
+    };
+
+    const renderGallery = async () => {
+        const grid = document.getElementById('galleryGrid');
+        if (!grid) return;
+
+        try {
+            const { data, error } = await window.supabase
+                .from('gallery')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+                grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 2rem; color: var(--text-secondary);">No images in gallery yet.</p>';
+                return;
+            }
+
+            grid.innerHTML = data.map(item => `
+                <div class="card" style="padding: 1rem; position: relative;">
+                    <img src="${item.image_url}" style="width: 100%; height: 150px; object-fit: cover; border-radius: 6px; margin-bottom: 0.5rem;" onerror="this.src='../assets/images/placeholder.png'">
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${item.caption}">${item.caption || 'No caption'}</p>
+                    <div class="action-btns" style="justify-content: flex-end; border-top: 1px solid var(--border); padding-top: 0.5rem;">
+                        <button class="btn-icon edit-gallery" data-id="${item.id}" title="Edit"><i class="fas fa-edit"></i></button>
+                        <button class="btn-icon delete delete-gallery" data-id="${item.id}" title="Delete"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+            `).join('');
+
+            // Attach listeners to newly rendered buttons
+            grid.querySelectorAll('.edit-gallery').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-id');
+                    const item = data.find(i => i.id == id);
+                    openGalleryModal('edit', item);
+                });
+            });
+
+            grid.querySelectorAll('.delete-gallery').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-id');
+                    handleGalleryDelete(id);
+                });
+            });
+
+        } catch (error) {
+            console.error('Gallery fetch error:', error);
+            grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--danger);">Failed to load gallery items.</p>';
+        }
+    };
+
+    const openGalleryModal = (mode, item = null) => {
+        const isEdit = mode === 'edit';
+        const title = isEdit ? 'Edit Gallery Item' : 'Upload New Image';
+        
+        const content = `
+            <form id="galleryForm" class="modal-form">
+                <div class="form-group">
+                    <label for="imgUrl">Image URL</label>
+                    <input type="url" id="imgUrl" value="${isEdit ? item.image_url : ''}" placeholder="https://example.com/image.jpg" required style="width: 100%; padding: 0.75rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary);">
+                </div>
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label for="imgCaption">Caption</label>
+                    <textarea id="imgCaption" placeholder="Brief description..." style="width: 100%; padding: 0.75rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); resize: vertical; min-height: 80px;">${isEdit ? item.caption : ''}</textarea>
+                </div>
+            </form>
+        `;
+
+        window.openModal(title, content, async () => {
+            const imageUrl = document.getElementById('imgUrl').value;
+            const caption = document.getElementById('imgCaption').value;
+            
+            if (!imageUrl) {
+                showToast('Image URL is required', true);
+                return;
+            }
+
+            try {
+                let result;
+                if (isEdit) {
+                    result = await window.supabase
+                        .from('gallery')
+                        .update({ image_url: imageUrl, caption: caption })
+                        .eq('id', item.id);
+                } else {
+                    result = await window.supabase
+                        .from('gallery')
+                        .insert([{ image_url: imageUrl, caption: caption }]);
+                }
+
+                if (result.error) throw result.error;
+
+                showToast(isEdit ? 'Gallery item updated!' : 'Image uploaded successfully!');
+                renderGallery(); // Refresh the grid
+            } catch (error) {
+                console.error('Gallery save error:', error);
+                showToast('Failed to save gallery item', true);
+            }
+        });
+    };
+
+    const handleGalleryDelete = (id) => {
+        const title = 'Confirm Deletion';
+        const content = `
+            <p>Are you sure you want to delete this gallery item? This action cannot be undone.</p>
+        `;
+
+        window.openModal(title, content, async () => {
+            try {
+                const { error } = await window.supabase
+                    .from('gallery')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+
+                showToast('Gallery item deleted');
+                renderGallery(); // Refresh the grid
+            } catch (error) {
+                console.error('Gallery delete error:', error);
+                showToast('Failed to delete item', true);
+            }
+        });
+        
+        // Change the Save button text to Delete for this modal
+        const saveBtn = document.getElementById('saveModal');
+        if (saveBtn) {
+            saveBtn.textContent = 'Delete';
+            saveBtn.classList.add('btn-danger'); // Add a red style if needed
+        }
+    };
+
     // Modal Handling
     const adminModal = document.getElementById('adminModal');
     const closeModalBtn = document.getElementById('closeModal');
@@ -72,13 +214,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.openModal = function(title, contentHtml, onSaveCallback) {
         if (!adminModal) return;
+        
+        // Reset global save button reference state before cloning
+        const btn = document.getElementById('saveModal');
+        if (btn) {
+            btn.textContent = 'Save';
+            btn.className = 'btn btn-primary btn-sm'; // Reset to default classes
+        }
+
         modalTitle.textContent = title;
         modalBody.innerHTML = contentHtml;
         adminModal.classList.add('show');
         
-        // Remove old event listeners to prevent duplicates
-        const newSaveBtn = saveModalBtn.cloneNode(true);
-        saveModalBtn.parentNode.replaceChild(newSaveBtn, saveModalBtn);
+        // Re-get the button after reset and clone it to clear listeners
+        const currentBtn = document.getElementById('saveModal');
+        const newSaveBtn = currentBtn.cloneNode(true);
+        currentBtn.parentNode.replaceChild(newSaveBtn, currentBtn);
         
         newSaveBtn.addEventListener('click', () => {
             if (onSaveCallback) onSaveCallback();
