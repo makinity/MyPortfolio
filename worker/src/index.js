@@ -262,12 +262,18 @@ const handleContactRequest = async (payload, env, corsHeaders) => {
     // Save to Supabase
     const supabase = getSupabaseClient(env);
     if (supabase) {
-        await supabase.from('contact_messages').insert({
+        const { error: dbError } = await supabase.from('contact_messages').insert({
             name: safeName,
             email: email,
             subject: `Portfolio Contact: ${safeName}`,
             message: message
         });
+        
+        if (dbError) {
+            console.error("SUPABASE_INSERT_ERROR:", dbError.message, dbError.details);
+        } else {
+            console.log("SUPABASE_INSERT_SUCCESS");
+        }
     }
 
     return json(
