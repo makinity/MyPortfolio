@@ -91,15 +91,28 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             grid.innerHTML = data.map(item => {
-                // Fix pathing for admin view
+                // Determine the best path for the image
                 let displayUrl = item.image_url || '';
+                
                 if (displayUrl && !displayUrl.startsWith('http') && !displayUrl.startsWith('blob:') && !displayUrl.startsWith('data:')) {
-                    displayUrl = '../' + displayUrl;
+                    // Try both ../assets and /assets depending on environment
+                    // If we are on a server, /assets usually works better.
+                    // If we are on file://, ../assets is required.
+                    const isLocalFile = window.location.protocol === 'file:';
+                    displayUrl = isLocalFile ? '../' + displayUrl : '/' + displayUrl;
                 }
+
+                console.log(`Gallery Item ${item.id} URL:`, displayUrl);
 
                 return `
                     <div class="card" style="padding: 1rem; position: relative;">
-                        <img src="${displayUrl}" style="width: 100%; height: 150px; object-fit: cover; border-radius: 6px; margin-bottom: 0.5rem;" onerror="this.src='../assets/images/placeholder.png'">
+                        <img src="${displayUrl}" 
+                             style="width: 100%; height: 150px; object-fit: cover; border-radius: 6px; margin-bottom: 0.5rem; background: #1e293b;" 
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="img-placeholder" style="display: none; width: 100%; height: 150px; background: #334155; border-radius: 6px; margin-bottom: 0.5rem; align-items: center; justify-content: center; flex-direction: column; color: var(--text-secondary); font-size: 0.75rem;">
+                            <i class="fas fa-image" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
+                            <span>Image Not Found</span>
+                        </div>
                         <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${item.caption}">${item.caption || 'No caption'}</p>
                         <div class="action-btns" style="justify-content: flex-end; border-top: 1px solid var(--border); padding-top: 0.5rem;">
                             <button class="btn-icon edit-gallery" data-id="${item.id}" title="Edit"><i class="fas fa-edit"></i></button>
