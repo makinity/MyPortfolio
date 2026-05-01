@@ -1933,19 +1933,19 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
 
         window.openModal(title, content, async () => {
-            const name = document.getElementById('socialName').value;
-            const url = document.getElementById('socialUrl').value;
-            const icon = document.getElementById('socialIcon').value;
+            const platformName = document.getElementById('socialName').value.trim();
+            const url = document.getElementById('socialUrl').value.trim();
+            const icon = document.getElementById('socialIcon').value.trim();
             const order = parseInt(document.getElementById('socialOrder').value) || 0;
 
-            if (!name || !url || !icon) {
+            if (!platformName || !url || !icon) {
                 showToast('All fields are required', true);
                 throw new Error('Missing fields');
             }
 
             try {
                 const socialData = {
-                    platform: name,
+                    platform: platformName,
                     url,
                     icon_class: icon,
                     sort_order: order
@@ -1953,15 +1953,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 let res;
                 if (isEdit) {
-                    res = await window.supabase.from('social_links').update(socialData).eq('id', item.id);
+                    res = await window.supabase.from('social_links').update(socialData).eq('id', item.id).select('id');
                 } else {
-                    res = await window.supabase.from('social_links').insert([socialData]);
+                    res = await window.supabase.from('social_links').insert([socialData]).select('id');
                 }
 
                 if (res.error) throw res.error;
 
                 showToast(`Social link ${isEdit ? 'updated' : 'added'} successfully`);
-                await logActivity(isEdit ? 'Updated' : 'Added', `Social Link: ${name}`);
+                await logActivity(isEdit ? 'Updated' : 'Added', `Social Link: ${platformName}`);
                 renderSocialLinks();
 
             } catch (error) {
