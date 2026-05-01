@@ -53,7 +53,6 @@
     const resumeUpdated = document.getElementById('resumeUpdated');
     const resumePreviewLink = document.getElementById('resumePreviewLink');
     const resumePreviewImage = document.getElementById('resumePreviewImage');
-    const resumePreviewFallback = document.getElementById('resumePreviewFallback');
     const resumeViewLink = document.getElementById('resumeViewLink');
     const resumeDownloadLink = document.getElementById('resumeDownloadLink');
     const anchorGap = 0;
@@ -746,23 +745,30 @@
                     resumePreviewLink.href = activeResume.file_url;
                 }
 
-                if (resumePreviewImage && resumePreviewFallback) {
+                if (resumePreviewImage) {
                     const hasPreviewImage = Boolean(activeResume.preview_image_url);
-                    resumePreviewImage.hidden = !hasPreviewImage;
-                    resumePreviewFallback.hidden = hasPreviewImage;
                     resumePreviewImage.alt = `${activeResume.title || 'Resume'} preview image`;
+
+                    if (resumePreviewLink) {
+                        resumePreviewLink.hidden = !hasPreviewImage;
+                    }
 
                     if (hasPreviewImage) {
                         resumePreviewImage.onerror = () => {
                             resumePreviewImage.hidden = true;
-                            resumePreviewFallback.hidden = false;
+                            if (resumePreviewLink) {
+                                resumePreviewLink.hidden = true;
+                            }
                         };
                         resumePreviewImage.onload = () => {
                             resumePreviewImage.hidden = false;
-                            resumePreviewFallback.hidden = true;
+                            if (resumePreviewLink) {
+                                resumePreviewLink.hidden = false;
+                            }
                         };
                         resumePreviewImage.src = activeResume.preview_image_url;
                     } else {
+                        resumePreviewImage.hidden = true;
                         resumePreviewImage.onerror = null;
                         resumePreviewImage.onload = null;
                         resumePreviewImage.removeAttribute('src');
