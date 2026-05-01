@@ -216,32 +216,32 @@
 
         <section id="resume" hidden>
             <h2>Resume</h2>
-            <p class="resume-intro">
-                The currently active resume is available here for quick viewing or download.
-            </p>
             <div class="resume-card">
-                <a class="resume-preview-link" id="resumePreviewLink" href="#" target="_blank" rel="noopener noreferrer" aria-label="Open resume preview">
-                    <div class="resume-preview-frame">
-                        <img id="resumePreviewImage" src="" alt="Resume preview image" hidden>
-                        <div class="resume-preview-fallback" id="resumePreviewFallback">
-                            <i class="fas fa-file-pdf"></i>
-                            <span>PDF Resume</span>
-                            <small>Preview unavailable</small>
-                        </div>
-                    </div>
-                </a>
                 <div class="resume-copy">
-                    <span class="resume-eyebrow">Current public resume</span>
                     <h3 id="resumeTitle">Professional Resume</h3>
                     <p id="resumeSummary">Use the admin panel to choose which resume appears on the portfolio.</p>
-                    <div class="resume-meta">
-                        <span id="resumeUpdated">Last updated recently</span>
-                        <span>PDF document</span>
+                    <a class="resume-preview-link" id="resumePreviewLink" href="#" target="_blank" rel="noopener noreferrer" aria-label="Open resume preview">
+                        <div class="resume-preview-frame">
+                            <img id="resumePreviewImage" src="" alt="Resume preview image" hidden>
+                            <div class="resume-preview-fallback" id="resumePreviewFallback" hidden>
+                                <i class="fas fa-file-pdf"></i>
+                                <span>Preview unavailable</span>
+                            </div>
+                        </div>
+                    </a>
+                    <div class="resume-footer">
+                        <span class="resume-updated" id="resumeUpdated">Last updated recently</span>
+                        <div class="resume-actions">
+                            <a class="resume-action-link" id="resumeViewLink" href="#" target="_blank" rel="noopener noreferrer">
+                                <i class="fas fa-eye" aria-hidden="true"></i>
+                                <span>View</span>
+                            </a>
+                            <a class="resume-action-link" id="resumeDownloadLink" href="#" target="_blank" rel="noopener noreferrer" download>
+                                <i class="fas fa-download" aria-hidden="true"></i>
+                                <span>Download</span>
+                            </a>
+                        </div>
                     </div>
-                </div>
-                <div class="resume-actions">
-                    <a class="btn btn-primary" id="resumeViewLink" href="#" target="_blank" rel="noopener noreferrer">View Resume</a>
-                    <a class="btn btn-outline" id="resumeDownloadLink" href="#" target="_blank" rel="noopener noreferrer" download>Download PDF</a>
                 </div>
             </div>
         </section>
