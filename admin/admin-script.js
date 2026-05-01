@@ -2721,7 +2721,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
                 runBtn.disabled = true;
-                runBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Analyzing...';
+                resultsArea.style.display = 'none'; // Hide old results
+                runBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Initializing...';
                 
                 // 1. Get Active Resume
                 const { data: resume, error: resError } = await window.supabase
@@ -2735,6 +2736,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 2. Extract Text
                 runBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Reading PDF...';
                 const resumeText = await extractTextFromPDF(resume.file_url);
+                
+                if (!resumeText || resumeText.length < 50) {
+                    throw new Error('Resume text extraction failed or text is too short. Is your PDF a scanned image?');
+                }
 
                 // 3. Call AI
                 runBtn.innerHTML = '<i class="fas fa-robot fa-spin"></i> Grok is thinking...';
@@ -2746,10 +2751,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const aiData = await response.json();
                 if (!response.ok) throw new Error(aiData.error || 'AI Analysis failed');
+                
+                console.log('AI Response:', aiData.reply);
+
+                if (!aiData.reply) throw new Error('AI returned an empty response. Please try again.');
 
                 // 4. Show Results
                 resultsArea.style.display = 'block';
-                outputBody.textContent = aiData.reply; // Using textContent for raw display
+                // Simple markdown-to-html conversion for the output
+                outputBody.innerHTML = aiData.reply
+                    .replace(/\n/g, '<br>')
+                    .replace(/\*\*(.*?)\*\*/g, '<strong style="color: var(--blue-primary);">$1</strong>')
+                    .replace(/### (.*?)(<br>|$)/g, '<h5 style="color: var(--blue-primary); margin: 1.5rem 0 0.5rem 0; font-size: 1.1rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.3rem;">$1</h5>')
+                    .replace(/^- (.*?)($|<br>)/gm, '<li style="margin-left: 1rem; margin-bottom: 0.4rem; list-style-type: disc;">$1</li>');
                 
                 showToast('Resume tailoring complete!');
                 runBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Run Again';
