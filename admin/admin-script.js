@@ -2685,30 +2685,43 @@ document.addEventListener('DOMContentLoaded', () => {
                     <textarea id="tailorJD" rows="8" placeholder="Paste the full job description here..." style="width: 100%; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; color: var(--text-primary); font-family: inherit; resize: vertical;"></textarea>
                     <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.5rem;">Grok will analyze this JD against your active resume.</p>
                 </div>
+                
+                <div style="display: flex; justify-content: center; margin-bottom: 1.5rem;">
+                    <button id="btnRunTailor" class="btn btn-primary" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.8rem 2rem;">
+                        <i class="fas fa-magic"></i> Run AI Analysis
+                    </button>
+                </div>
+
                 <div id="tailorResults" style="display: none; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
-                    <h4 style="margin-bottom: 1rem; color: var(--blue-primary); display: flex; align-items: center; gap: 0.5rem;">
-                        <i class="fas fa-robot"></i> AI Refinement Analysis
-                    </h4>
-                    <div id="tailorOutput" style="background: rgba(255,255,255,0.02); padding: 1.25rem; border-radius: 8px; font-size: 0.95rem; line-height: 1.6; max-height: 400px; overflow-y: auto; color: var(--text-primary); border: 1px solid rgba(255,255,255,0.05);"></div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h4 style="color: var(--blue-primary); display: flex; align-items: center; gap: 0.5rem; margin: 0;">
+                            <i class="fas fa-robot"></i> AI Suggestions
+                        </h4>
+                        <button id="btnCopyTailor" class="btn-icon" title="Copy to Clipboard" style="color: var(--blue-primary);"><i class="fas fa-copy"></i> Copy</button>
+                    </div>
+                    <div id="tailorOutput" style="background: rgba(255,255,255,0.02); padding: 1.25rem; border-radius: 8px; font-size: 0.95rem; line-height: 1.6; max-height: 350px; overflow-y: auto; color: var(--text-primary); border: 1px solid rgba(255,255,255,0.05); white-space: pre-wrap;"></div>
                 </div>
             </div>
         `;
 
-        window.openModal(title, content, async () => {
-            const jd = document.getElementById('tailorJD').value.trim();
-            if (!jd) {
-                showToast('Please paste a job description', true);
-                throw new Error('JD missing');
-            }
+        window.openModal(title, content, null); // Open with null callback to prevent auto-close
+        
+        // Hide default save button
+        const saveBtn = document.getElementById('saveModal');
+        if (saveBtn) saveBtn.style.display = 'none';
 
-            const outputContainer = document.getElementById('tailorResults');
-            const outputBody = document.getElementById('tailorOutput');
-            const saveBtn = document.getElementById('saveModal');
-            
+        const runBtn = document.getElementById('btnRunTailor');
+        const resultsArea = document.getElementById('tailorResults');
+        const outputBody = document.getElementById('tailorOutput');
+        const copyBtn = document.getElementById('btnCopyTailor');
+
+        runBtn.addEventListener('click', async () => {
+            const jd = document.getElementById('tailorJD').value.trim();
+            if (!jd) return showToast('Please paste a job description', true);
+
             try {
-                saveBtn.disabled = true;
-                const originalText = saveBtn.innerHTML;
-                saveBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Initializing...';
+                runBtn.disabled = true;
+                runBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Analyzing...';
                 
                 // 1. Get Active Resume
                 const { data: resume, error: resError } = await window.supabase
@@ -2720,11 +2733,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (resError || !resume) throw new Error('No active resume found. Please upload one in the Resume section first.');
 
                 // 2. Extract Text
-                saveBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Reading PDF...';
+                runBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Reading PDF...';
                 const resumeText = await extractTextFromPDF(resume.file_url);
 
                 // 3. Call AI
-                saveBtn.innerHTML = '<i class="fas fa-robot fa-spin"></i> Grok is analyzing...';
+                runBtn.innerHTML = '<i class="fas fa-robot fa-spin"></i> Grok is thinking...';
                 const response = await fetch('https://portfolio-chat.makidevportfolio.workers.dev/ai/tailor-resume', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -2735,33 +2748,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!response.ok) throw new Error(aiData.error || 'AI Analysis failed');
 
                 // 4. Show Results
-                outputContainer.style.display = 'block';
-                // Simple markdown-to-html conversion for the output
-                outputBody.innerHTML = aiData.reply
-                    .replace(/\n/g, '<br>')
-                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                    .replace(/### (.*?)(<br>|$)/g, '<h5 style="color: var(--blue-primary); margin: 1.5rem 0 0.5rem 0; font-size: 1.1rem;">$1</h5>')
-                    .replace(/^- (.*?)($|<br>)/gm, '<li style="margin-left: 1rem; margin-bottom: 0.25rem;">$1</li>');
+                resultsArea.style.display = 'block';
+                outputBody.textContent = aiData.reply; // Using textContent for raw display
                 
                 showToast('Resume tailoring complete!');
-                
-                // Change save button to "Done"
-                saveBtn.innerHTML = 'Done';
-                saveBtn.onclick = () => window.closeModal();
+                runBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Run Again';
                 
             } catch (error) {
                 console.error('Tailor error:', error);
                 showToast(error.message, true);
-                throw error;
+                runBtn.innerHTML = '<i class="fas fa-magic"></i> Try Again';
             } finally {
-                saveBtn.disabled = false;
-                if (saveBtn.innerHTML !== 'Done') saveBtn.innerHTML = '<i class="fas fa-magic"></i> Run Analysis';
+                runBtn.disabled = false;
             }
         });
 
-        // Initial button text
-        const saveBtn = document.getElementById('saveModal');
-        if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-magic"></i> Run Analysis';
+        copyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(outputBody.textContent);
+            showToast('Suggestions copied to clipboard!');
+        });
     };
 
     // Logout Handler
