@@ -1873,13 +1873,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             tbody.innerHTML = data.map(link => `
                 <tr>
-                    <td><i class="${link.icon}" style="margin-right: 1rem; width: 20px;"></i> <strong>${link.name}</strong></td>
+                    <td><i class="${link.icon_class || link.icon || ''}" style="margin-right: 1rem; width: 20px;"></i> <strong>${link.name || link.platform || 'Social Link'}</strong></td>
                     <td><a href="${link.url}" target="_blank" style="color: var(--blue-primary);">${link.url}</a></td>
                     <td>${link.sort_order}</td>
                     <td>
                         <div class="action-btns">
                             <button class="btn-icon edit-social" data-id="${link.id}" title="Edit"><i class="fas fa-edit"></i></button>
-                            <button class="btn-icon delete delete-social" data-id="${link.id}" data-name="${link.name}" title="Delete"><i class="fas fa-trash"></i></button>
+                            <button class="btn-icon delete delete-social" data-id="${link.id}" data-name="${link.name || link.platform || 'Social Link'}" title="Delete"><i class="fas fa-trash"></i></button>
                         </div>
                     </td>
                 </tr>
@@ -1915,7 +1915,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const content = `
             <div class="form-group">
                 <label>Platform Name</label>
-                <input type="text" id="socialName" value="${isEdit ? item.name : ''}" placeholder="e.g. GitHub">
+                <input type="text" id="socialName" value="${isEdit ? (item.name || item.platform || '') : ''}" placeholder="e.g. GitHub">
             </div>
             <div class="form-group">
                 <label>URL</label>
@@ -1923,7 +1923,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             <div class="form-group">
                 <label>Icon Class (FontAwesome)</label>
-                <input type="text" id="socialIcon" value="${isEdit ? item.icon : ''}" placeholder="fab fa-github">
+                <input type="text" id="socialIcon" value="${isEdit ? (item.icon_class || item.icon || '') : ''}" placeholder="fab fa-github">
                 <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.5rem;">e.g. <b>fab fa-linkedin</b>, <b>fab fa-facebook</b></p>
             </div>
             <div class="form-group">
@@ -1947,7 +1947,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const socialData = {
                     name,
                     url,
-                    icon,
+                    icon_class: icon,
                     sort_order: order
                 };
 
