@@ -682,6 +682,17 @@ h2::after {
 }
 
 /* ========== RESUME SECTION ========== */
+#resume {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#resume h2 {
+    width: min(100%, 760px);
+    text-align: center;
+}
+
 .resume-card {
     width: min(100%, 760px);
     margin: 0 auto;
@@ -716,7 +727,7 @@ h2::after {
 
 .resume-preview-link {
     display: block;
-    width: min(100%, 320px);
+    width: min(100%, 260px);
     text-decoration: none;
     color: inherit;
 }
