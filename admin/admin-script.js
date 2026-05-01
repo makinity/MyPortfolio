@@ -2545,33 +2545,35 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const content = `
             <div class="form-group">
-                <label>Company Name</label>
+                <label><i class="fas fa-building" style="margin-right: 0.5rem;"></i>Company Name</label>
                 <input type="text" id="appCompany" value="${isEdit ? escapeHtml(item.company) : ''}" placeholder="e.g. Google">
             </div>
             <div class="form-group">
-                <label>Position / Role</label>
+                <label><i class="fas fa-user-tie" style="margin-right: 0.5rem;"></i>Position / Role</label>
                 <input type="text" id="appPosition" value="${isEdit ? escapeHtml(item.position) : ''}" placeholder="e.g. Frontend Developer">
             </div>
             <div class="form-group">
-                <label>Job URL (Optional)</label>
+                <label><i class="fas fa-link" style="margin-right: 0.5rem;"></i>Job URL (Optional)</label>
                 <input type="url" id="appUrl" value="${isEdit ? escapeHtml(item.job_url || '') : ''}" placeholder="https://linkedin.com/jobs/...">
             </div>
-            <div class="form-group">
-                <label>Status</label>
-                <select id="appStatus">
-                    <option value="Applied" ${isEdit && item.status === 'Applied' ? 'selected' : ''}>Applied</option>
-                    <option value="Interviewing" ${isEdit && item.status === 'Interviewing' ? 'selected' : ''}>Interviewing</option>
-                    <option value="Offered" ${isEdit && item.status === 'Offered' ? 'selected' : ''}>Offered</option>
-                    <option value="Rejected" ${isEdit && item.status === 'Rejected' ? 'selected' : ''}>Rejected</option>
-                    <option value="Ghosted" ${isEdit && item.status === 'Ghosted' ? 'selected' : ''}>Ghosted</option>
-                </select>
+            <div class="form-row">
+                <div class="form-group">
+                    <label><i class="fas fa-info-circle" style="margin-right: 0.5rem;"></i>Status</label>
+                    <select id="appStatus">
+                        <option value="Applied" ${isEdit && item.status === 'Applied' ? 'selected' : ''}>Applied</option>
+                        <option value="Interviewing" ${isEdit && item.status === 'Interviewing' ? 'selected' : ''}>Interviewing</option>
+                        <option value="Offered" ${isEdit && item.status === 'Offered' ? 'selected' : ''}>Offered</option>
+                        <option value="Rejected" ${isEdit && item.status === 'Rejected' ? 'selected' : ''}>Rejected</option>
+                        <option value="Ghosted" ${isEdit && item.status === 'Ghosted' ? 'selected' : ''}>Ghosted</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-calendar-day" style="margin-right: 0.5rem;"></i>Date Applied</label>
+                    <input type="date" id="appDate" value="${isEdit ? item.date_applied : new Date().toISOString().split('T')[0]}">
+                </div>
             </div>
             <div class="form-group">
-                <label>Date Applied</label>
-                <input type="date" id="appDate" value="${isEdit ? item.date_applied : new Date().toISOString().split('T')[0]}">
-            </div>
-            <div class="form-group">
-                <label>Notes (Optional)</label>
+                <label><i class="fas fa-sticky-note" style="margin-right: 0.5rem;"></i>Notes (Optional)</label>
                 <textarea id="appNotes" rows="3" placeholder="Additional details...">${isEdit ? escapeHtml(item.notes || '') : ''}</textarea>
             </div>
         `;
