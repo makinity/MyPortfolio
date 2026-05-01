@@ -7,12 +7,18 @@ create table if not exists public.resumes (
     file_name text not null,
     file_url text not null,
     storage_path text not null,
+    preview_image_url text,
+    preview_storage_path text,
     mime_type text not null default 'application/pdf',
     file_size bigint not null default 0 check (file_size >= 0),
     is_active boolean not null default false,
     created_at timestamptz not null default timezone('utc', now()),
     updated_at timestamptz not null default timezone('utc', now())
 );
+
+alter table public.resumes
+    add column if not exists preview_image_url text,
+    add column if not exists preview_storage_path text;
 
 create or replace function public.handle_resumes_updated_at()
 returns trigger
@@ -99,7 +105,12 @@ values (
     'resumes',
     true,
     10485760,
-    array['application/pdf']::text[]
+    array[
+        'application/pdf',
+        'image/jpeg',
+        'image/png',
+        'image/webp'
+    ]::text[]
 )
 on conflict (id) do update
 set

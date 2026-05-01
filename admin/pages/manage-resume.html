@@ -2,7 +2,7 @@
     <div>
         <h1 class="page-title">My Resume</h1>
         <p style="margin-top: 0.35rem; color: var(--text-secondary);">
-            Upload resume PDFs and choose which one is active on the portfolio.
+            Upload resume PDFs with preview covers and choose which one is active on the portfolio.
         </p>
     </div>
     <button class="btn btn-primary" id="addResumeBtn"><i class="fas fa-plus"></i> Add Resume</button>
@@ -13,6 +13,7 @@
         <table class="admin-table">
             <thead>
                 <tr>
+                    <th>Preview</th>
                     <th>Title</th>
                     <th>Status</th>
                     <th>File</th>
@@ -22,7 +23,7 @@
             </thead>
             <tbody id="resumeList">
                 <tr>
-                    <td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                    <td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
                         Loading resumes...
                     </td>
                 </tr>

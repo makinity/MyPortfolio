@@ -51,6 +51,9 @@
     const resumeTitle = document.getElementById('resumeTitle');
     const resumeSummary = document.getElementById('resumeSummary');
     const resumeUpdated = document.getElementById('resumeUpdated');
+    const resumePreviewLink = document.getElementById('resumePreviewLink');
+    const resumePreviewImage = document.getElementById('resumePreviewImage');
+    const resumePreviewFallback = document.getElementById('resumePreviewFallback');
     const resumeViewLink = document.getElementById('resumeViewLink');
     const resumeDownloadLink = document.getElementById('resumeDownloadLink');
     const anchorGap = 0;
@@ -737,6 +740,33 @@
 
                 if (resumeUpdated) {
                     resumeUpdated.textContent = `Last updated ${formatPortfolioDate(activeResume.updated_at)}`;
+                }
+
+                if (resumePreviewLink) {
+                    resumePreviewLink.href = activeResume.file_url;
+                }
+
+                if (resumePreviewImage && resumePreviewFallback) {
+                    const hasPreviewImage = Boolean(activeResume.preview_image_url);
+                    resumePreviewImage.hidden = !hasPreviewImage;
+                    resumePreviewFallback.hidden = hasPreviewImage;
+                    resumePreviewImage.alt = `${activeResume.title || 'Resume'} preview image`;
+
+                    if (hasPreviewImage) {
+                        resumePreviewImage.onerror = () => {
+                            resumePreviewImage.hidden = true;
+                            resumePreviewFallback.hidden = false;
+                        };
+                        resumePreviewImage.onload = () => {
+                            resumePreviewImage.hidden = false;
+                            resumePreviewFallback.hidden = true;
+                        };
+                        resumePreviewImage.src = activeResume.preview_image_url;
+                    } else {
+                        resumePreviewImage.onerror = null;
+                        resumePreviewImage.onload = null;
+                        resumePreviewImage.removeAttribute('src');
+                    }
                 }
 
                 if (resumeViewLink) {

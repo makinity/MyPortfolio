@@ -87,6 +87,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentTechPage = 1;
     const adminPageSize = 10;
     const resumeBucketName = 'resumes';
+    const resumePreviewMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+    const resumePreviewExtensions = new Set(['jpg', 'jpeg', 'png', 'webp']);
     const formatAdminDate = (value) => {
         if (!value) return '—';
 
@@ -124,6 +126,31 @@ document.addEventListener('DOMContentLoaded', () => {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
     const sanitizeFileName = (value) => String(value).replace(/[^a-zA-Z0-9._-]+/g, '-');
+    const getLowerFileExtension = (fileName = '') => {
+        const normalizedName = String(fileName).trim().toLowerCase();
+        const lastDotIndex = normalizedName.lastIndexOf('.');
+        return lastDotIndex === -1 ? '' : normalizedName.slice(lastDotIndex + 1);
+    };
+    const isPdfFile = (file) => {
+        if (!file) return false;
+        return file.type === 'application/pdf' || getLowerFileExtension(file.name) === 'pdf';
+    };
+    const isAllowedResumePreviewFile = (file) => {
+        if (!file) return false;
+        return resumePreviewMimeTypes.has(file.type) || resumePreviewExtensions.has(getLowerFileExtension(file.name));
+    };
+    const resolveUploadContentType = (file, fallbackContentType = '') => {
+        if (file?.type) {
+            return file.type;
+        }
+
+        const extension = getLowerFileExtension(file?.name || '');
+        if (extension === 'pdf') return 'application/pdf';
+        if (extension === 'jpg' || extension === 'jpeg') return 'image/jpeg';
+        if (extension === 'png') return 'image/png';
+        if (extension === 'webp') return 'image/webp';
+        return fallbackContentType;
+    };
     const extractStoragePathFromPublicUrl = (bucketName, publicUrl) => {
         if (!publicUrl || typeof publicUrl !== 'string') {
             return '';
@@ -151,15 +178,34 @@ document.addEventListener('DOMContentLoaded', () => {
             throw error;
         }
     };
-    const uploadResumeFile = async (file) => {
-        const safeName = sanitizeFileName(file.name || 'resume.pdf');
-        const filePath = `documents/${Date.now()}-${safeName}`;
+    const renderAdminResumeThumb = (previewImageUrl) => {
+        const safePreviewImageUrl = escapeHtml(previewImageUrl || '');
+        if (previewImageUrl) {
+            return `
+                <div class="resume-thumb">
+                    <img src="${safePreviewImageUrl}" alt="Resume preview image" loading="lazy">
+                </div>
+            `;
+        }
+
+        return `
+            <div class="resume-thumb">
+                <div class="resume-thumb-fallback">
+                    <i class="fas fa-file-pdf"></i>
+                    <span>No Preview</span>
+                </div>
+            </div>
+        `;
+    };
+    const uploadResumeAsset = async (file, folder, fallbackFileName) => {
+        const safeName = sanitizeFileName(file.name || fallbackFileName);
+        const filePath = `${folder}/${Date.now()}-${safeName}`;
         const { error: uploadError } = await window.supabase.storage
             .from(resumeBucketName)
             .upload(filePath, file, {
                 cacheControl: '3600',
                 upsert: false,
-                contentType: file.type || 'application/pdf'
+                contentType: resolveUploadContentType(file, folder === 'documents' ? 'application/pdf' : 'image/jpeg')
             });
 
         if (uploadError) {
@@ -171,13 +217,15 @@ document.addEventListener('DOMContentLoaded', () => {
             .getPublicUrl(filePath);
 
         return {
-            fileName: file.name,
-            fileSize: file.size,
+            fileName: file.name || fallbackFileName,
+            fileSize: file.size || 0,
             fileUrl: urlData.publicUrl,
-            mimeType: file.type || 'application/pdf',
+            mimeType: resolveUploadContentType(file, folder === 'documents' ? 'application/pdf' : 'image/jpeg'),
             storagePath: filePath
         };
     };
+    const uploadResumeFile = async (file) => uploadResumeAsset(file, 'documents', 'resume.pdf');
+    const uploadResumePreview = async (file) => uploadResumeAsset(file, 'previews', 'resume-preview');
 
     // --- Gallery Management ---
     const initGalleryPage = async (page = 1) => {
@@ -681,7 +729,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (error) throw error;
 
             if (!data || data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No resumes uploaded yet.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No resumes uploaded yet.</td></tr>';
                 return;
             }
 
@@ -689,9 +737,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const safeTitle = escapeHtml(item.title || '');
                 const safeSummary = escapeHtml(item.summary || '');
                 const safeFileName = escapeHtml(item.file_name || 'resume.pdf');
+                const safeFileUrl = escapeHtml(item.file_url || '');
 
                 return `
                 <tr>
+                    <td>${renderAdminResumeThumb(item.preview_image_url)}</td>
                     <td>
                         <strong>${safeTitle}</strong>
                         <div style="margin-top: 0.35rem; color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5;">
@@ -704,7 +754,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </span>
                     </td>
                     <td>
-                        <a href="${item.file_url}" target="_blank" rel="noopener noreferrer" class="admin-inline-link">
+                        <a href="${safeFileUrl}" target="_blank" rel="noopener noreferrer" class="admin-inline-link">
                             ${safeFileName}
                         </a>
                         <div style="margin-top: 0.35rem; color: var(--text-secondary); font-size: 0.85rem;">
@@ -765,7 +815,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         } catch (error) {
             console.error('Render resumes error:', error);
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--danger);">Failed to load resumes.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--danger);">Failed to load resumes.</td></tr>';
             showToast('Failed to load resumes', true);
         }
     };
@@ -777,6 +827,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const safeTitle = escapeHtml(isEdit ? item.title : '');
         const safeSummary = escapeHtml(isEdit ? item.summary : '');
         const safeFileName = escapeHtml(isEdit ? item.file_name : '');
+        const previewNote = isEdit
+            ? `<div class="resume-preview-note">${renderAdminResumeThumb(item.preview_image_url)}</div>`
+            : '';
 
         const content = `
             <div class="form-group">
@@ -794,6 +847,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${isEdit ? `Current file: ${safeFileName}` : 'Upload a PDF file for this resume.'}
                 </p>
             </div>
+            <div class="form-group">
+                <label>Preview Image ${isEdit ? '(Optional)' : ''}</label>
+                <input type="file" id="resumePreviewInput" accept="image/jpeg,image/png,image/webp">
+                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                    ${isEdit ? 'Upload a new preview image only if you want to replace the current one.' : 'Upload a cover image for the public resume preview.'}
+                </p>
+                ${previewNote}
+            </div>
             <label style="display: inline-flex; align-items: center; gap: 0.65rem; margin-top: 0.5rem; color: var(--text-primary);">
                 <input type="checkbox" id="resumeIsActiveInput" ${isEdit && item.is_active ? 'checked' : ''}>
                 Set this resume as active on the portfolio
@@ -804,12 +865,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const resumeTitleInput = document.getElementById('resumeTitleInput');
             const resumeSummaryInput = document.getElementById('resumeSummaryInput');
             const resumeFileInput = document.getElementById('resumeFileInput');
+            const resumePreviewInput = document.getElementById('resumePreviewInput');
             const resumeIsActiveInput = document.getElementById('resumeIsActiveInput');
 
             const resumeTitle = resumeTitleInput?.value.trim() || '';
             const resumeSummary = resumeSummaryInput?.value.trim() || '';
             const shouldBeActive = Boolean(resumeIsActiveInput?.checked);
             const file = resumeFileInput?.files?.[0];
+            const previewFile = resumePreviewInput?.files?.[0];
 
             if (!resumeTitle || !resumeSummary) {
                 showToast('Title and summary are required', true);
@@ -821,17 +884,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error('Resume file required');
             }
 
-            if (file && file.type && file.type !== 'application/pdf') {
+            if (!isEdit && !previewFile) {
+                showToast('Please upload a preview image', true);
+                throw new Error('Resume preview required');
+            }
+
+            if (file && !isPdfFile(file)) {
                 showToast('Only PDF files are allowed', true);
                 throw new Error('Invalid file type');
             }
 
+            if (previewFile && !isAllowedResumePreviewFile(previewFile)) {
+                showToast('Preview image must be JPG, PNG, or WEBP', true);
+                throw new Error('Invalid preview type');
+            }
+
             let uploadedFile = null;
+            let uploadedPreview = null;
             let didPersistRecord = false;
 
             try {
                 if (file) {
                     uploadedFile = await uploadResumeFile(file);
+                }
+
+                if (previewFile) {
+                    uploadedPreview = await uploadResumePreview(previewFile);
                 }
 
                 const resumeData = {
@@ -845,6 +923,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     resumeData.file_url = uploadedFile.fileUrl;
                     resumeData.mime_type = uploadedFile.mimeType;
                     resumeData.storage_path = uploadedFile.storagePath;
+                }
+
+                if (uploadedPreview) {
+                    resumeData.preview_image_url = uploadedPreview.fileUrl;
+                    resumeData.preview_storage_path = uploadedPreview.storagePath;
                 }
 
                 let targetResumeId = item?.id || null;
@@ -899,6 +982,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
+                if (uploadedPreview && isEdit && item.preview_storage_path !== uploadedPreview.storagePath) {
+                    try {
+                        await deleteResumeStorageObject(item.preview_storage_path, item.preview_image_url);
+                    } catch (cleanupError) {
+                        console.error('Previous resume preview cleanup error:', cleanupError);
+                    }
+                }
+
                 showToast(`Resume ${isEdit ? 'updated' : 'added'} successfully`);
                 await logActivity(isEdit ? 'Updated' : 'Added', `Resume: ${savedResume?.title || resumeTitle}`);
                 if (shouldBeActive) {
@@ -911,6 +1002,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         await deleteResumeStorageObject(uploadedFile.storagePath, uploadedFile.fileUrl);
                     } catch (cleanupError) {
                         console.error('Resume upload cleanup error:', cleanupError);
+                    }
+                }
+
+                if (uploadedPreview && !didPersistRecord) {
+                    try {
+                        await deleteResumeStorageObject(uploadedPreview.storagePath, uploadedPreview.fileUrl);
+                    } catch (cleanupError) {
+                        console.error('Resume preview cleanup error:', cleanupError);
                     }
                 }
 
@@ -950,6 +1049,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.openModal(title, content, async () => {
             try {
                 await deleteResumeStorageObject(item.storage_path, item.file_url);
+                await deleteResumeStorageObject(item.preview_storage_path, item.preview_image_url);
 
                 const { error } = await window.supabase
                     .from('resumes')
