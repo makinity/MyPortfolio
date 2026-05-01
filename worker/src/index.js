@@ -727,7 +727,7 @@ export default {
             return handleResumeTailorRequest(payload, env, corsHeaders);
         }
 
-        if (!["/", "/chat", "/contact", "/portfolio"].includes(url.pathname)) {
+        if (!["/", "/chat", "/contact", "/portfolio", "/ai/tailor-resume", "/gmail/reply"].includes(url.pathname)) {
             return json(
                 { error: "Not found" },
                 { status: 404, headers: corsHeaders }
