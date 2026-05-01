@@ -396,7 +396,7 @@ const handlePortfolioDataRequest = async (env, corsHeaders) => {
             try {
                 const { data, error } = await supabase
                     .from('resumes')
-                    .select('id, title, summary, file_url, file_name, updated_at')
+                    .select('id, title, summary, file_url, file_name, updated_at, preview_image_url')
                     .eq('is_active', true)
                     .limit(1)
                     .maybeSingle();
