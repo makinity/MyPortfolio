@@ -684,6 +684,7 @@ h2::after {
 /* ========== RESUME SECTION ========== */
 .resume-card {
     width: min(100%, 760px);
+    margin: 0 auto;
     padding: 2rem;
     border-radius: 22px;
     background:
@@ -697,6 +698,8 @@ h2::after {
     display: flex;
     flex-direction: column;
     gap: 0.9rem;
+    align-items: center;
+    text-align: center;
 }
 
 .resume-card h3 {
@@ -713,7 +716,7 @@ h2::after {
 
 .resume-preview-link {
     display: block;
-    width: min(100%, 420px);
+    width: min(100%, 320px);
     text-decoration: none;
     color: inherit;
 }
@@ -756,7 +759,7 @@ h2::after {
 .resume-footer {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
     gap: 0.55rem;
 }
 
@@ -772,6 +775,7 @@ h2::after {
     flex-wrap: wrap;
     gap: 1rem;
     align-items: center;
+    justify-content: center;
 }
 
 .resume-action-link {
