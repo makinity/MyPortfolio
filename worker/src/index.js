@@ -626,6 +626,75 @@ const handleGmailReply = async (payload, env, corsHeaders) => {
     return json(result, { headers: corsHeaders });
 };
 
+const handleResumeTailorRequest = async (payload, env, corsHeaders) => {
+    const resumeText = typeof payload?.resumeText === "string" ? payload.resumeText.trim() : "";
+    const jobDescription = typeof payload?.jobDescription === "string" ? payload.jobDescription.trim() : "";
+
+    if (!resumeText || !jobDescription) {
+        return json(
+            { error: "Resume text and job description are required" },
+            { status: 400, headers: corsHeaders }
+        );
+    }
+
+    if (!env.GROQ_API_KEY) {
+        return json(
+            { error: "AI service is not configured" },
+            { status: 500, headers: corsHeaders }
+        );
+    }
+
+    const messages = [
+        {
+            role: "system",
+            content: `You are an expert Career Coach and Resume Optimizer. Your goal is to help the user honestly refine their resume to better align with a specific Job Description. 
+            
+            Strict Guidelines:
+            1. HONESTY: Do not invent experiences, roles, or skills that are not present in the original resume.
+            2. ALIGNMENT: Identify key keywords and skills in the Job Description (JD) that the user already has but might have phrased differently.
+            3. OPTIMIZATION: Suggest re-phrasing existing bullet points to match the JD's terminology (ATS optimization).
+            4. STRUCTURE: Provide a "Tailored Professional Summary", a list of "Key Skills to Highlight", and "Bullet Point Improvements".
+            5. FORMAT: Use clean Markdown for the response.`
+        },
+        {
+            role: "user",
+            content: `ORIGINAL RESUME TEXT:\n${resumeText}\n\nTARGET JOB DESCRIPTION:\n${jobDescription}\n\nPlease provide an honest refinement analysis.`
+        }
+    ];
+
+    try {
+        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${env.GROQ_API_KEY}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                model: "llama-3.1-70b-versatile",
+                temperature: 0.3,
+                max_tokens: 2000,
+                messages,
+            }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error?.message || "AI request failed");
+        }
+
+        return json(
+            { reply: data.choices[0].message.content },
+            { status: 200, headers: corsHeaders }
+        );
+    } catch (error) {
+        console.error("AI_TAILOR_ERROR:", error.message);
+        return json(
+            { error: error.message },
+            { status: 500, headers: corsHeaders }
+        );
+    }
+};
+
 export default {
     async fetch(request, env) {
         const url = new URL(request.url);
@@ -651,6 +720,11 @@ export default {
         if (request.method === "POST" && url.pathname === "/gmail/reply") {
             const payload = await request.json();
             return handleGmailReply(payload, env, corsHeaders);
+        }
+
+        if (request.method === "POST" && url.pathname === "/ai/tailor-resume") {
+            const payload = await request.json();
+            return handleResumeTailorRequest(payload, env, corsHeaders);
         }
 
         if (!["/", "/chat", "/contact", "/portfolio"].includes(url.pathname)) {

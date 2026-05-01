@@ -229,6 +229,31 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const uploadResumeFile = async (file) => uploadResumeAsset(file, 'documents', 'resume.pdf');
     const uploadResumePreview = async (file) => uploadResumeAsset(file, 'previews', 'resume-preview');
+    
+    // --- PDF Text Extraction ---
+    const extractTextFromPDF = async (url) => {
+        try {
+            // Initialize pdfjsLib
+            const pdfjsLib = window['pdfjs-dist/build/pdf'];
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+            const loadingTask = pdfjsLib.getDocument(url);
+            const pdf = await loadingTask.promise;
+            let fullText = '';
+
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                const pageText = textContent.items.map(item => item.str).join(' ');
+                fullText += pageText + '\n\n';
+            }
+
+            return fullText.trim();
+        } catch (error) {
+            console.error('PDF extraction error:', error);
+            throw new Error('Could not extract text from PDF. Please make sure it is not a scanned image.');
+        }
+    };
 
     // --- Gallery Management ---
     const initGalleryPage = async (page = 1) => {
@@ -2486,6 +2511,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>${formatAdminDate(app.date_applied)}</td>
                     <td>
                         <div class="action-btns">
+                            <button class="btn-icon ai-tailor-app" data-id="${app.id}" title="AI Resume Tailor"><i class="fas fa-wand-magic-sparkles"></i></button>
                             <button class="btn-icon edit-app" data-id="${app.id}" title="Edit"><i class="fas fa-edit"></i></button>
                             <button class="btn-icon delete-app" data-id="${app.id}" title="Delete"><i class="fas fa-trash"></i></button>
                         </div>
@@ -2530,6 +2556,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.addEventListener('click', () => {
                     const id = btn.getAttribute('data-id');
                     handleApplicationDelete(id);
+                });
+            });
+
+            tbody.querySelectorAll('.ai-tailor-app').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-id');
+                    const item = data.find(a => a.id === id);
+                    if (item) openTailorModal(item);
                 });
             });
 
@@ -2640,6 +2674,94 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.textContent = 'Delete';
             btn.classList.add('btn-danger');
         }
+    };
+
+    const openTailorModal = async (app) => {
+        const title = `Tailor Resume: ${app.company}`;
+        const content = `
+            <div class="tailor-container">
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Job Description</label>
+                    <textarea id="tailorJD" rows="8" placeholder="Paste the full job description here..." style="width: 100%; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; color: var(--text-primary); font-family: inherit; resize: vertical;"></textarea>
+                    <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.5rem;">Grok will analyze this JD against your active resume.</p>
+                </div>
+                <div id="tailorResults" style="display: none; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
+                    <h4 style="margin-bottom: 1rem; color: var(--blue-primary); display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-robot"></i> AI Refinement Analysis
+                    </h4>
+                    <div id="tailorOutput" style="background: rgba(255,255,255,0.02); padding: 1.25rem; border-radius: 8px; font-size: 0.95rem; line-height: 1.6; max-height: 400px; overflow-y: auto; color: var(--text-primary); border: 1px solid rgba(255,255,255,0.05);"></div>
+                </div>
+            </div>
+        `;
+
+        window.openModal(title, content, async () => {
+            const jd = document.getElementById('tailorJD').value.trim();
+            if (!jd) {
+                showToast('Please paste a job description', true);
+                throw new Error('JD missing');
+            }
+
+            const outputContainer = document.getElementById('tailorResults');
+            const outputBody = document.getElementById('tailorOutput');
+            const saveBtn = document.getElementById('saveModal');
+            
+            try {
+                saveBtn.disabled = true;
+                const originalText = saveBtn.innerHTML;
+                saveBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Initializing...';
+                
+                // 1. Get Active Resume
+                const { data: resume, error: resError } = await window.supabase
+                    .from('resumes')
+                    .select('file_url')
+                    .eq('is_active', true)
+                    .single();
+                
+                if (resError || !resume) throw new Error('No active resume found. Please upload one in the Resume section first.');
+
+                // 2. Extract Text
+                saveBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Reading PDF...';
+                const resumeText = await extractTextFromPDF(resume.file_url);
+
+                // 3. Call AI
+                saveBtn.innerHTML = '<i class="fas fa-robot fa-spin"></i> Grok is analyzing...';
+                const response = await fetch('https://portfolio-chat.makidevportfolio.workers.dev/ai/tailor-resume', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ resumeText, jobDescription: jd })
+                });
+
+                const aiData = await response.json();
+                if (!response.ok) throw new Error(aiData.error || 'AI Analysis failed');
+
+                // 4. Show Results
+                outputContainer.style.display = 'block';
+                // Simple markdown-to-html conversion for the output
+                outputBody.innerHTML = aiData.reply
+                    .replace(/\n/g, '<br>')
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/### (.*?)(<br>|$)/g, '<h5 style="color: var(--blue-primary); margin: 1.5rem 0 0.5rem 0; font-size: 1.1rem;">$1</h5>')
+                    .replace(/^- (.*?)($|<br>)/gm, '<li style="margin-left: 1rem; margin-bottom: 0.25rem;">$1</li>');
+                
+                showToast('Resume tailoring complete!');
+                
+                // Change save button to "Done"
+                saveBtn.innerHTML = 'Done';
+                saveBtn.onclick = () => window.closeModal();
+                
+            } catch (error) {
+                console.error('Tailor error:', error);
+                showToast(error.message, true);
+                throw error;
+            } finally {
+                saveBtn.disabled = false;
+                if (saveBtn.innerHTML !== 'Done') saveBtn.innerHTML = '<i class="fas fa-magic"></i> Run Analysis';
+            }
+        });
+
+        // Initial button text
+        const saveBtn = document.getElementById('saveModal');
+        if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-magic"></i> Run Analysis';
     };
 
     // Logout Handler
