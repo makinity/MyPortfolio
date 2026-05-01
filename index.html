@@ -44,6 +44,7 @@
                 <li><a href="#about">About</a></li>
                 <li><a href="#tech-stack">Tech Stack</a></li>
                 <li><a href="#gallery">Gallery</a></li>
+                <li data-resume-nav hidden><a href="#resume">Resume</a></li>
                 <li><a href="#projects">Projects</a></li>
                 <li><a href="#contact">Contact</a></li>
             </ul>
@@ -78,6 +79,7 @@
                 <li><a href="#about">About</a></li>
                 <li><a href="#tech-stack">Tech Stack</a></li>
                 <li><a href="#gallery">Gallery</a></li>
+                <li data-resume-nav hidden><a href="#resume">Resume</a></li>
                 <li><a href="#projects">Projects</a></li>
                 <li><a href="#contact">Contact</a></li>
             </ul>
@@ -208,6 +210,28 @@
             <div class="gallery-wrapper">
                 <div class="gallery-slider" id="gallerySlider">
                     <!-- Gallery items will be injected by JavaScript -->
+                </div>
+            </div>
+        </section>
+
+        <section id="resume" hidden>
+            <h2>Resume</h2>
+            <p class="resume-intro">
+                The currently active resume is available here for quick viewing or download.
+            </p>
+            <div class="resume-card">
+                <div class="resume-copy">
+                    <span class="resume-eyebrow">Current public resume</span>
+                    <h3 id="resumeTitle">Professional Resume</h3>
+                    <p id="resumeSummary">Use the admin panel to choose which resume appears on the portfolio.</p>
+                    <div class="resume-meta">
+                        <span id="resumeUpdated">Last updated recently</span>
+                        <span>PDF document</span>
+                    </div>
+                </div>
+                <div class="resume-actions">
+                    <a class="btn btn-primary" id="resumeViewLink" href="#" target="_blank" rel="noopener noreferrer">View Resume</a>
+                    <a class="btn btn-outline" id="resumeDownloadLink" href="#" target="_blank" rel="noopener noreferrer" download>Download PDF</a>
                 </div>
             </div>
         </section>

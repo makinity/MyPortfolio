@@ -681,6 +681,90 @@ h2::after {
     border: 1px solid rgba(0, 168, 255, 0.3);
 }
 
+/* ========== RESUME SECTION ========== */
+.resume-intro {
+    color: var(--text-secondary);
+    margin-bottom: 1.2rem;
+    font-size: 1.05rem;
+}
+
+.resume-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(220px, 0.9fr);
+    gap: 1.5rem;
+    align-items: center;
+    padding: 1.75rem;
+    border-radius: 24px;
+    background:
+        linear-gradient(135deg, rgba(8, 18, 40, 0.96), rgba(17, 28, 48, 0.98)),
+        radial-gradient(circle at top right, rgba(0, 168, 255, 0.18), transparent 42%);
+    border: 1px solid rgba(0, 168, 255, 0.22);
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.22);
+}
+
+.resume-copy {
+    min-width: 0;
+}
+
+.resume-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.85rem;
+    color: var(--blue-primary);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.resume-card h3 {
+    margin-bottom: 0.75rem;
+    font-size: clamp(1.6rem, 2vw, 2rem);
+}
+
+.resume-card p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 1rem;
+    line-height: 1.7;
+}
+
+.resume-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem 1.25rem;
+    margin-top: 1rem;
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+}
+
+.resume-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.resume-meta span::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--blue-primary);
+    box-shadow: 0 0 10px rgba(0, 168, 255, 0.45);
+}
+
+.resume-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    align-items: stretch;
+}
+
+.resume-actions .btn {
+    min-width: 0;
+}
+
 /* ========== AUTO-SCROLLING PROJECTS ========== */
 .projects-wrapper {
     position: relative;
@@ -1241,6 +1325,15 @@ footer {
     .hero-visual {
         justify-content: flex-start;
     }
+
+    .resume-card {
+        grid-template-columns: 1fr;
+    }
+
+    .resume-actions {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
 }
 
 @media (max-width: 768px) {
@@ -1345,6 +1438,10 @@ footer {
         left: 1rem;
         right: 1rem;
         width: auto;
+    }
+
+    .resume-actions {
+        flex-direction: column;
     }
 
     .mobile-drawer {

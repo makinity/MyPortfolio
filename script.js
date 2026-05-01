@@ -46,6 +46,13 @@
     const contactForm = document.getElementById('contactForm');
     const contactSubmit = document.getElementById('contactSubmit');
     const contactFormStatus = document.getElementById('contactFormStatus');
+    const resumeSection = document.getElementById('resume');
+    const resumeNavItems = document.querySelectorAll('[data-resume-nav]');
+    const resumeTitle = document.getElementById('resumeTitle');
+    const resumeSummary = document.getElementById('resumeSummary');
+    const resumeUpdated = document.getElementById('resumeUpdated');
+    const resumeViewLink = document.getElementById('resumeViewLink');
+    const resumeDownloadLink = document.getElementById('resumeDownloadLink');
     const anchorGap = 0;
     let chatbotHistory = [];
     let isChatRequestPending = false;
@@ -66,6 +73,15 @@
     };
 
     const closeDrawer = () => setDrawerState(false);
+    const setResumeVisibility = (isVisible) => {
+        if (resumeSection) {
+            resumeSection.hidden = !isVisible;
+        }
+
+        resumeNavItems.forEach((item) => {
+            item.hidden = !isVisible;
+        });
+    };
     const syncNavOffset = () => {
         const navHeight = nav ? Math.ceil(nav.getBoundingClientRect().height) : 0;
         root.style.setProperty('--nav-offset', `${navHeight}px`);
@@ -90,6 +106,7 @@
     };
 
     syncNavOffset();
+    setResumeVisibility(false);
 
     const scrollChatToBottom = () => {
         if (!chatbotMessages) return;
@@ -236,6 +253,22 @@
         if (contactSubmit) {
             contactSubmit.classList.toggle('is-loading', isDisabled);
         }
+    };
+    const formatPortfolioDate = (value) => {
+        if (!value) {
+            return 'Recently updated';
+        }
+
+        const parsedDate = new Date(value);
+        if (Number.isNaN(parsedDate.getTime())) {
+            return 'Recently updated';
+        }
+
+        return new Intl.DateTimeFormat('en-US', {
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric'
+        }).format(parsedDate);
     };
     const sendChatMessage = async (message) => {
         if (!isChatbotConfigured()) {
@@ -688,6 +721,32 @@
                 
                 // Initialize manual + auto sliding
                 initContinuousSlider('gallerySlider', 1.2);
+            }
+
+            // 6. Resume
+            const activeResume = data.resume && data.resume.file_url ? data.resume : null;
+            setResumeVisibility(Boolean(activeResume));
+            if (activeResume) {
+                if (resumeTitle) {
+                    resumeTitle.textContent = activeResume.title || 'Professional Resume';
+                }
+
+                if (resumeSummary) {
+                    resumeSummary.textContent = activeResume.summary || 'View or download the currently active resume.';
+                }
+
+                if (resumeUpdated) {
+                    resumeUpdated.textContent = `Last updated ${formatPortfolioDate(activeResume.updated_at)}`;
+                }
+
+                if (resumeViewLink) {
+                    resumeViewLink.href = activeResume.file_url;
+                }
+
+                if (resumeDownloadLink) {
+                    resumeDownloadLink.href = activeResume.file_url;
+                    resumeDownloadLink.setAttribute('download', activeResume.file_name || 'resume.pdf');
+                }
             }
             
         } catch (error) {

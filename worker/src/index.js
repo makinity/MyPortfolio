@@ -392,7 +392,32 @@ const handlePortfolioDataRequest = async (env, corsHeaders) => {
     }
 
     try {
-        const [profile, projects, gallery, tech_stack, social_links, quick_facts, side_skills, specialty] = await Promise.all([
+        const fetchActiveResume = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('resumes')
+                    .select('id, title, summary, file_url, file_name, updated_at')
+                    .eq('is_active', true)
+                    .limit(1)
+                    .maybeSingle();
+
+                if (error) {
+                    console.error("RESUME_FETCH_ERROR:", error.message);
+                    return null;
+                }
+
+                if (!data?.file_url) {
+                    return null;
+                }
+
+                return data;
+            } catch (error) {
+                console.error("RESUME_FETCH_ERROR:", error?.message || String(error));
+                return null;
+            }
+        };
+
+        const [profile, projects, gallery, tech_stack, social_links, quick_facts, side_skills, specialty, resume] = await Promise.all([
             supabase.from('profile').select('*').limit(1).single(),
             supabase.from('projects').select('*').order('sort_order'),
             supabase.from('gallery').select('*').order('created_at', { ascending: false }),
@@ -400,7 +425,8 @@ const handlePortfolioDataRequest = async (env, corsHeaders) => {
             supabase.from('social_links').select('*').order('sort_order'),
             supabase.from('quick_facts').select('*').order('sort_order'),
             supabase.from('side_skills').select('*').order('sort_order'),
-            supabase.from('specialty_banner').select('*').limit(1).single()
+            supabase.from('specialty_banner').select('*').limit(1).single(),
+            fetchActiveResume()
         ]);
 
         return json(
@@ -416,7 +442,8 @@ const handlePortfolioDataRequest = async (env, corsHeaders) => {
                     ...specialty.data,
                     main_icon: specialty.data.icon_main,
                     small_icon: specialty.data.icon_header
-                } : null
+                } : null,
+                resume
             },
             { status: 200, headers: corsHeaders }
         );

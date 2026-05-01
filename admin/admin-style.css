@@ -428,8 +428,47 @@ body {
     color: var(--blue-primary);
 }
 
+.btn-icon:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.btn-icon:disabled:hover {
+    color: var(--text-secondary);
+}
+
 .btn-icon.delete:hover {
     color: var(--danger);
+}
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 84px;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.12);
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.status-pill.is-active {
+    background: rgba(34, 197, 94, 0.12);
+    border-color: rgba(34, 197, 94, 0.35);
+    color: #86efac;
+}
+
+.admin-inline-link {
+    color: var(--blue-accent);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.admin-inline-link:hover {
+    text-decoration: underline;
 }
 
 /* Forms */

@@ -51,6 +51,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 initDashboardPage();
             } else if (pageName === 'manage-gallery') {
                 initGalleryPage();
+            } else if (pageName === 'manage-resume') {
+                initResumePage();
             } else if (pageName === 'manage-projects') {
                 initProjectsPage();
             } else if (pageName === 'manage-expertise-tech') {
@@ -84,6 +86,98 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentProjectsPage = 1;
     let currentTechPage = 1;
     const adminPageSize = 10;
+    const resumeBucketName = 'resumes';
+    const formatAdminDate = (value) => {
+        if (!value) return '—';
+
+        const parsedDate = new Date(value);
+        if (Number.isNaN(parsedDate.getTime())) {
+            return '—';
+        }
+
+        return new Intl.DateTimeFormat('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        }).format(parsedDate);
+    };
+    const formatFileSize = (bytes) => {
+        const value = Number(bytes);
+        if (!Number.isFinite(value) || value <= 0) {
+            return '—';
+        }
+
+        if (value < 1024) {
+            return `${value} B`;
+        }
+
+        if (value < 1024 * 1024) {
+            return `${(value / 1024).toFixed(1)} KB`;
+        }
+
+        return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+    };
+    const escapeHtml = (value = '') => String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    const sanitizeFileName = (value) => String(value).replace(/[^a-zA-Z0-9._-]+/g, '-');
+    const extractStoragePathFromPublicUrl = (bucketName, publicUrl) => {
+        if (!publicUrl || typeof publicUrl !== 'string') {
+            return '';
+        }
+
+        const marker = `/storage/v1/object/public/${bucketName}/`;
+        const markerIndex = publicUrl.indexOf(marker);
+        if (markerIndex === -1) {
+            return '';
+        }
+
+        return publicUrl.slice(markerIndex + marker.length);
+    };
+    const deleteResumeStorageObject = async (storagePath, fileUrl = '') => {
+        const resolvedPath = storagePath || extractStoragePathFromPublicUrl(resumeBucketName, fileUrl);
+        if (!resolvedPath) {
+            return;
+        }
+
+        const { error } = await window.supabase.storage
+            .from(resumeBucketName)
+            .remove([resolvedPath]);
+
+        if (error) {
+            throw error;
+        }
+    };
+    const uploadResumeFile = async (file) => {
+        const safeName = sanitizeFileName(file.name || 'resume.pdf');
+        const filePath = `documents/${Date.now()}-${safeName}`;
+        const { error: uploadError } = await window.supabase.storage
+            .from(resumeBucketName)
+            .upload(filePath, file, {
+                cacheControl: '3600',
+                upsert: false,
+                contentType: file.type || 'application/pdf'
+            });
+
+        if (uploadError) {
+            throw uploadError;
+        }
+
+        const { data: urlData } = window.supabase.storage
+            .from(resumeBucketName)
+            .getPublicUrl(filePath);
+
+        return {
+            fileName: file.name,
+            fileSize: file.size,
+            fileUrl: urlData.publicUrl,
+            mimeType: file.type || 'application/pdf',
+            storagePath: filePath
+        };
+    };
 
     // --- Gallery Management ---
     const initGalleryPage = async (page = 1) => {
@@ -262,6 +356,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (result.error) throw result.error;
 
                 showToast(isEdit ? 'Gallery item updated!' : 'Image uploaded successfully!');
+                await logActivity(isEdit ? 'Updated' : 'Added', `Gallery Image: ${caption}`);
                 renderGallery(); 
             } catch (error) {
                 console.error('Gallery save error:', error);
@@ -282,7 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 1. Fetch the item first to get the image URL
                 const { data: item, error: fetchError } = await window.supabase
                     .from('gallery')
-                    .select('image_url')
+                    .select('image_url, caption')
                     .eq('id', id)
                     .single();
 
@@ -564,6 +659,322 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // --- Resume Management ---
+    const initResumePage = async () => {
+        const btnAdd = document.getElementById('addResumeBtn');
+        if (btnAdd) {
+            btnAdd.addEventListener('click', () => openResumeModal('add'));
+        }
+        await renderResumes();
+    };
+
+    const renderResumes = async () => {
+        const tbody = document.getElementById('resumeList');
+        if (!tbody) return;
+
+        try {
+            const { data, error } = await window.supabase
+                .from('resumes')
+                .select('*')
+                .order('updated_at', { ascending: false });
+
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No resumes uploaded yet.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map((item) => {
+                const safeTitle = escapeHtml(item.title || '');
+                const safeSummary = escapeHtml(item.summary || '');
+                const safeFileName = escapeHtml(item.file_name || 'resume.pdf');
+
+                return `
+                <tr>
+                    <td>
+                        <strong>${safeTitle}</strong>
+                        <div style="margin-top: 0.35rem; color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5;">
+                            ${safeSummary}
+                        </div>
+                    </td>
+                    <td>
+                        <span class="status-pill${item.is_active ? ' is-active' : ''}">
+                            ${item.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="${item.file_url}" target="_blank" rel="noopener noreferrer" class="admin-inline-link">
+                            ${safeFileName}
+                        </a>
+                        <div style="margin-top: 0.35rem; color: var(--text-secondary); font-size: 0.85rem;">
+                            ${formatFileSize(item.file_size)}
+                        </div>
+                    </td>
+                    <td>${formatAdminDate(item.updated_at || item.created_at)}</td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="btn-icon view-resume" data-id="${item.id}" title="View"><i class="fas fa-eye"></i></button>
+                            <button class="btn-icon edit-resume" data-id="${item.id}" title="Edit"><i class="fas fa-edit"></i></button>
+                            <button class="btn-icon activate-resume" data-id="${item.id}" ${item.is_active ? 'disabled' : ''} title="${item.is_active ? 'Already active' : 'Set active'}"><i class="fas fa-circle-check"></i></button>
+                            <button class="btn-icon delete delete-resume" data-id="${item.id}" title="Delete"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            }).join('');
+
+            tbody.querySelectorAll('.view-resume').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-id');
+                    const item = data.find((resume) => String(resume.id) === String(id));
+                    if (item?.file_url) {
+                        window.open(item.file_url, '_blank', 'noopener,noreferrer');
+                    }
+                });
+            });
+
+            tbody.querySelectorAll('.edit-resume').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-id');
+                    const item = data.find((resume) => String(resume.id) === String(id));
+                    if (item) {
+                        openResumeModal('edit', item);
+                    }
+                });
+            });
+
+            tbody.querySelectorAll('.activate-resume').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-id');
+                    const item = data.find((resume) => String(resume.id) === String(id));
+                    if (item && !item.is_active) {
+                        handleResumeActivation(item);
+                    }
+                });
+            });
+
+            tbody.querySelectorAll('.delete-resume').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-id');
+                    const item = data.find((resume) => String(resume.id) === String(id));
+                    if (item) {
+                        handleResumeDelete(item);
+                    }
+                });
+            });
+        } catch (error) {
+            console.error('Render resumes error:', error);
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--danger);">Failed to load resumes.</td></tr>';
+            showToast('Failed to load resumes', true);
+        }
+    };
+
+    const openResumeModal = (mode, item = null) => {
+        const isEdit = mode === 'edit';
+        const title = isEdit ? 'Edit Resume' : 'Add Resume';
+
+        const safeTitle = escapeHtml(isEdit ? item.title : '');
+        const safeSummary = escapeHtml(isEdit ? item.summary : '');
+        const safeFileName = escapeHtml(isEdit ? item.file_name : '');
+
+        const content = `
+            <div class="form-group">
+                <label>Resume Title</label>
+                <input type="text" id="resumeTitleInput" value="${safeTitle}" placeholder="e.g. Full Stack Developer Resume">
+            </div>
+            <div class="form-group">
+                <label>Short Summary</label>
+                <textarea id="resumeSummaryInput" rows="4" placeholder="Short caption for the public resume card">${safeSummary}</textarea>
+            </div>
+            <div class="form-group">
+                <label>Resume PDF ${isEdit ? '(Optional)' : ''}</label>
+                <input type="file" id="resumeFileInput" accept="application/pdf,.pdf">
+                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                    ${isEdit ? `Current file: ${safeFileName}` : 'Upload a PDF file for this resume.'}
+                </p>
+            </div>
+            <label style="display: inline-flex; align-items: center; gap: 0.65rem; margin-top: 0.5rem; color: var(--text-primary);">
+                <input type="checkbox" id="resumeIsActiveInput" ${isEdit && item.is_active ? 'checked' : ''}>
+                Set this resume as active on the portfolio
+            </label>
+        `;
+
+        window.openModal(title, content, async () => {
+            const resumeTitleInput = document.getElementById('resumeTitleInput');
+            const resumeSummaryInput = document.getElementById('resumeSummaryInput');
+            const resumeFileInput = document.getElementById('resumeFileInput');
+            const resumeIsActiveInput = document.getElementById('resumeIsActiveInput');
+
+            const resumeTitle = resumeTitleInput?.value.trim() || '';
+            const resumeSummary = resumeSummaryInput?.value.trim() || '';
+            const shouldBeActive = Boolean(resumeIsActiveInput?.checked);
+            const file = resumeFileInput?.files?.[0];
+
+            if (!resumeTitle || !resumeSummary) {
+                showToast('Title and summary are required', true);
+                throw new Error('Missing resume fields');
+            }
+
+            if (!isEdit && !file) {
+                showToast('Please upload a PDF resume', true);
+                throw new Error('Resume file required');
+            }
+
+            if (file && file.type && file.type !== 'application/pdf') {
+                showToast('Only PDF files are allowed', true);
+                throw new Error('Invalid file type');
+            }
+
+            let uploadedFile = null;
+            let didPersistRecord = false;
+
+            try {
+                if (file) {
+                    uploadedFile = await uploadResumeFile(file);
+                }
+
+                const resumeData = {
+                    title: resumeTitle,
+                    summary: resumeSummary
+                };
+
+                if (uploadedFile) {
+                    resumeData.file_name = uploadedFile.fileName;
+                    resumeData.file_size = uploadedFile.fileSize;
+                    resumeData.file_url = uploadedFile.fileUrl;
+                    resumeData.mime_type = uploadedFile.mimeType;
+                    resumeData.storage_path = uploadedFile.storagePath;
+                }
+
+                let targetResumeId = item?.id || null;
+                let savedResume = item;
+
+                if (isEdit) {
+                    const { data: updatedRows, error: updateError } = await window.supabase
+                        .from('resumes')
+                        .update(resumeData)
+                        .eq('id', item.id)
+                        .select('*')
+                        .single();
+
+                    if (updateError) throw updateError;
+
+                    savedResume = updatedRows;
+                    targetResumeId = item.id;
+                    didPersistRecord = true;
+                } else {
+                    const { data: insertedRows, error: insertError } = await window.supabase
+                        .from('resumes')
+                        .insert([{ ...resumeData, is_active: false }])
+                        .select('*')
+                        .single();
+
+                    if (insertError) throw insertError;
+
+                    savedResume = insertedRows;
+                    targetResumeId = insertedRows.id;
+                    didPersistRecord = true;
+                }
+
+                if (shouldBeActive && targetResumeId) {
+                    const { error: activateError } = await window.supabase
+                        .rpc('set_active_resume', { p_resume_id: targetResumeId });
+
+                    if (activateError) throw activateError;
+                } else if (isEdit && item.is_active && !shouldBeActive) {
+                    const { error: deactivateError } = await window.supabase
+                        .from('resumes')
+                        .update({ is_active: false })
+                        .eq('id', item.id);
+
+                    if (deactivateError) throw deactivateError;
+                }
+
+                if (uploadedFile && isEdit && item.storage_path !== uploadedFile.storagePath) {
+                    try {
+                        await deleteResumeStorageObject(item.storage_path, item.file_url);
+                    } catch (cleanupError) {
+                        console.error('Previous resume cleanup error:', cleanupError);
+                    }
+                }
+
+                showToast(`Resume ${isEdit ? 'updated' : 'added'} successfully`);
+                await logActivity(isEdit ? 'Updated' : 'Added', `Resume: ${savedResume?.title || resumeTitle}`);
+                if (shouldBeActive) {
+                    await logActivity('Activated', `Resume: ${savedResume?.title || resumeTitle}`);
+                }
+                await renderResumes();
+            } catch (error) {
+                if (uploadedFile && !didPersistRecord) {
+                    try {
+                        await deleteResumeStorageObject(uploadedFile.storagePath, uploadedFile.fileUrl);
+                    } catch (cleanupError) {
+                        console.error('Resume upload cleanup error:', cleanupError);
+                    }
+                }
+
+                console.error('Resume save error:', error);
+                showToast('Failed to save resume: ' + error.message, true);
+                throw error;
+            }
+        });
+    };
+
+    const handleResumeActivation = async (item) => {
+        const title = 'Set Active Resume';
+        const content = `<p>Make <strong>${escapeHtml(item.title)}</strong> the public resume shown on your portfolio?</p>`;
+
+        window.openModal(title, content, async () => {
+            try {
+                const { error } = await window.supabase
+                    .rpc('set_active_resume', { p_resume_id: item.id });
+
+                if (error) throw error;
+
+                showToast('Active resume updated');
+                await logActivity('Activated', `Resume: ${item.title}`);
+                await renderResumes();
+            } catch (error) {
+                console.error('Resume activation error:', error);
+                showToast('Failed to activate resume', true);
+                throw error;
+            }
+        });
+    };
+
+    const handleResumeDelete = async (item) => {
+        const title = 'Delete Resume';
+        const content = `<p>Delete <strong>${escapeHtml(item.title)}</strong>? This will remove the PDF from storage and the resume record from the database.</p>`;
+
+        window.openModal(title, content, async () => {
+            try {
+                await deleteResumeStorageObject(item.storage_path, item.file_url);
+
+                const { error } = await window.supabase
+                    .from('resumes')
+                    .delete()
+                    .eq('id', item.id);
+
+                if (error) throw error;
+
+                showToast('Resume deleted');
+                await logActivity('Deleted', `Resume: ${item.title}`);
+                await renderResumes();
+            } catch (error) {
+                console.error('Resume delete error:', error);
+                showToast('Failed to delete resume', true);
+                throw error;
+            }
+        });
+
+        const btn = document.getElementById('saveModal');
+        if (btn) {
+            btn.textContent = 'Delete';
+            btn.classList.add('btn-danger');
+        }
+    };
+
     // --- Core Tech Stack ---
     const initTechStackPage = async (page = 1) => {
         currentTechPage = page;
@@ -605,7 +1016,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>
                         <div class="action-btns">
                             <button class="btn-icon edit-tech" data-id="${tech.id}" title="Edit"><i class="fas fa-edit"></i></button>
-                            <button class="btn-icon delete delete-tech" data-id="${tech.id}" title="Delete"><i class="fas fa-trash"></i></button>
+                            <button class="btn-icon delete delete-tech" data-id="${tech.id}" data-name="${tech.name}" title="Delete"><i class="fas fa-trash"></i></button>
                         </div>
                     </td>
                 </tr>
@@ -650,7 +1061,8 @@ document.addEventListener('DOMContentLoaded', () => {
             tbody.querySelectorAll('.delete-tech').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const id = btn.getAttribute('data-id');
-                    handleTechStackDelete(id);
+                    const name = btn.getAttribute('data-name');
+                    handleTechStackDelete(id, name);
                 });
             });
 
@@ -778,7 +1190,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>
                         <div class="action-btns">
                             <button class="btn-icon edit-sideskill" data-id="${skill.id}" title="Edit"><i class="fas fa-edit"></i></button>
-                            <button class="btn-icon delete delete-sideskill" data-id="${skill.id}" title="Delete"><i class="fas fa-trash"></i></button>
+                            <button class="btn-icon delete delete-side-skill" data-id="${skill.id}" data-text="${skill.text}" title="Delete"><i class="fas fa-trash"></i></button>
                         </div>
                     </td>
                 </tr>
@@ -793,10 +1205,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             });
 
-            tbody.querySelectorAll('.delete-sideskill').forEach(btn => {
+            tbody.querySelectorAll('.delete-side-skill').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const id = btn.getAttribute('data-id');
-                    handleSideSkillDelete(id);
+                    const text = btn.getAttribute('data-text');
+                    handleSideSkillDelete(id, text);
                 });
             });
 
@@ -852,6 +1265,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (res.error) throw res.error;
 
                 showToast(`Side skill ${isEdit ? 'updated' : 'added'} successfully`);
+                await logActivity(isEdit ? 'Updated' : 'Added', `Side Skill: ${text}`);
                 renderSideSkills();
 
             } catch (error) {
@@ -862,7 +1276,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    const handleSideSkillDelete = async (id) => {
+    const handleSideSkillDelete = async (id, skillName) => {
         const title = 'Confirm Deletion';
         const content = `<p>Are you sure you want to delete this side skill?</p>`;
 
@@ -872,6 +1286,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (error) throw error;
 
                 showToast('Side skill deleted');
+                await logActivity('Deleted', `Side Skill: ${skillName}`);
                 renderSideSkills();
             } catch (error) {
                 console.error('Delete error:', error);
@@ -983,6 +1398,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (res.error) throw res.error;
 
                     showToast('Profile updated successfully');
+                    await logActivity('Updated', 'Profile Details');
                     if (file) {
                         const parts = imageUrl.split('/');
                         document.getElementById('currentImageName').textContent = `Current: ${parts[parts.length - 1]}`;
@@ -1273,6 +1689,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             if (!res.ok) throw new Error("Failed to send email");
 
                             showToast('Reply sent successfully!');
+                            await logActivity('Replied', `Message from ${item.name}`);
                             document.getElementById('adminModal').style.display = 'none';
                         } catch (e) {
                             console.error(e);
@@ -1304,10 +1721,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         window.openModal(title, content, async () => {
             try {
+                const { data: item } = await window.supabase.from('contact_messages').select('name').eq('id', id).single();
                 const { error } = await window.supabase.from('contact_messages').delete().eq('id', id);
                 if (error) throw error;
 
                 showToast('Message deleted');
+                await logActivity('Deleted', `Message from ${item?.name || 'Unknown'}`);
                 renderMessages();
             } catch (error) {
                 console.error('Delete error:', error);
@@ -1357,7 +1776,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>
                         <div class="action-btns">
                             <button class="btn-icon edit-social" data-id="${link.id}" title="Edit"><i class="fas fa-edit"></i></button>
-                            <button class="btn-icon delete delete-social" data-id="${link.id}" title="Delete"><i class="fas fa-trash"></i></button>
+                            <button class="btn-icon delete delete-social" data-id="${link.id}" data-name="${link.name}" title="Delete"><i class="fas fa-trash"></i></button>
                         </div>
                     </td>
                 </tr>
@@ -1375,7 +1794,8 @@ document.addEventListener('DOMContentLoaded', () => {
             tbody.querySelectorAll('.delete-social').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const id = btn.getAttribute('data-id');
-                    handleSocialLinkDelete(id);
+                    const name = btn.getAttribute('data-name');
+                    handleSocialLinkDelete(id, name);
                 });
             });
 
@@ -1438,6 +1858,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (res.error) throw res.error;
 
                 showToast(`Social link ${isEdit ? 'updated' : 'added'} successfully`);
+                await logActivity(isEdit ? 'Updated' : 'Added', `Social Link: ${name}`);
                 renderSocialLinks();
 
             } catch (error) {
@@ -1448,7 +1869,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    const handleSocialLinkDelete = async (id) => {
+    const handleSocialLinkDelete = async (id, socialName) => {
         const title = 'Confirm Deletion';
         const content = `<p>Are you sure you want to delete this social link?</p>`;
 
@@ -1458,6 +1879,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (error) throw error;
 
                 showToast('Social link deleted');
+                await logActivity('Deleted', `Social Link: ${socialName}`);
                 renderSocialLinks();
             } catch (error) {
                 console.error('Delete error:', error);
@@ -1786,7 +2208,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>
                         <div class="action-btns">
                             <button class="btn-icon edit-fact" data-id="${item.id}" title="Edit"><i class="fas fa-edit"></i></button>
-                            <button class="btn-icon delete delete-fact" data-id="${item.id}" title="Delete"><i class="fas fa-trash"></i></button>
+                            <button class="btn-icon delete delete-fact" data-id="${item.id}" data-text="${item.text}" title="Delete"><i class="fas fa-trash"></i></button>
                         </div>
                     </td>
                 </tr>
@@ -1804,7 +2226,8 @@ document.addEventListener('DOMContentLoaded', () => {
             tbody.querySelectorAll('.delete-fact').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const id = btn.getAttribute('data-id');
-                    handleQuickFactDelete(id);
+                    const text = btn.getAttribute('data-text');
+                    handleQuickFactDelete(id, text);
                 });
             });
 
@@ -1859,6 +2282,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (result.error) throw result.error;
 
                 showToast(isEdit ? 'Fact updated!' : 'Fact added successfully!');
+                await logActivity(isEdit ? 'Updated' : 'Added', `Quick Fact: ${text}`);
                 renderQuickFacts();
             } catch (error) {
                 console.error('Save fact error:', error);
@@ -1868,7 +2292,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    const handleQuickFactDelete = async (id) => {
+    const handleQuickFactDelete = async (id, factText) => {
         if (!confirm('Are you sure you want to delete this fact?')) return;
 
         try {
