@@ -1,0 +1,57 @@
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Application Tracker</h1>
+        <p style="margin-top: 0.35rem; color: var(--text-secondary);">
+            Track and manage your job applications, interviews, and offers.
+        </p>
+    </div>
+    <button class="btn btn-primary" id="addApplicationBtn"><i class="fas fa-plus"></i> Add Application</button>
+</div>
+
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+        <div class="form-group" style="flex: 1; min-width: 250px; margin-bottom: 0;">
+            <div style="position: relative;">
+                <i class="fas fa-search" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-secondary);"></i>
+                <input type="text" id="appSearchInput" placeholder="Search company or position..." style="padding-left: 2.5rem; width: 100%;">
+            </div>
+        </div>
+        <div class="form-group" style="width: 200px; margin-bottom: 0;">
+            <select id="appStatusFilter" style="width: 100%;">
+                <option value="all">All Statuses</option>
+                <option value="Applied">Applied</option>
+                <option value="Interviewing">Interviewing</option>
+                <option value="Offered">Offered</option>
+                <option value="Rejected">Rejected</option>
+                <option value="Ghosted">Ghosted</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Company</th>
+                    <th>Position</th>
+                    <th>Status</th>
+                    <th>Date Applied</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="applicationsList">
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                        <i class="fas fa-circle-notch fa-spin" style="margin-right: 0.5rem;"></i> Loading applications...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="appPagination" class="pagination-controls" style="margin-top: 1.5rem;">
+    <!-- Pagination buttons will be injected here -->
+</div>

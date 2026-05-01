@@ -69,6 +69,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 initQuickFactsPage();
             } else if (pageName === 'manage-system-messages') {
                 initMessagesPage();
+            } else if (pageName === 'manage-applications') {
+                initApplicationsPage();
             }
             
         } catch (error) {
@@ -85,6 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentGalleryPage = 1;
     let currentProjectsPage = 1;
     let currentTechPage = 1;
+    let currentApplicationsPage = 1;
     const adminPageSize = 10;
     const resumeBucketName = 'resumes';
     const resumePreviewMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -2411,7 +2414,233 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Navigation Click Handler
+    // --- Application Tracker Management ---
+    const initApplicationsPage = async (page = 1) => {
+        currentApplicationsPage = page;
+        const btnAdd = document.getElementById('addApplicationBtn');
+        const searchInput = document.getElementById('appSearchInput');
+        const statusFilter = document.getElementById('appStatusFilter');
+
+        if (btnAdd) {
+            btnAdd.addEventListener('click', () => openApplicationModal('add'));
+        }
+
+        if (searchInput) {
+            searchInput.addEventListener('input', () => {
+                currentApplicationsPage = 1; // Reset to first page on search
+                renderApplications();
+            });
+        }
+
+        if (statusFilter) {
+            statusFilter.addEventListener('change', () => {
+                currentApplicationsPage = 1; // Reset to first page on filter
+                renderApplications();
+            });
+        }
+
+        await renderApplications();
+    };
+
+    const renderApplications = async () => {
+        const tbody = document.getElementById('applicationsList');
+        const searchInput = document.getElementById('appSearchInput');
+        const statusFilter = document.getElementById('appStatusFilter');
+        if (!tbody) return;
+
+        try {
+            let query = window.supabase
+                .from('applications')
+                .select('*', { count: 'exact' });
+
+            // Apply filters
+            if (searchInput && searchInput.value.trim() !== '') {
+                const searchTerm = searchInput.value.trim();
+                query = query.or(`company.ilike.%${searchTerm}%,position.ilike.%${searchTerm}%`);
+            }
+
+            if (statusFilter && statusFilter.value !== 'all') {
+                query = query.eq('status', statusFilter.value);
+            }
+
+            const { data, count, error } = await query
+                .order('date_applied', { ascending: false })
+                .range((currentApplicationsPage - 1) * adminPageSize, currentApplicationsPage * adminPageSize - 1);
+
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No applications found.</td></tr>';
+                const pagContainer = document.getElementById('appPagination');
+                if (pagContainer) pagContainer.innerHTML = '';
+                return;
+            }
+
+            tbody.innerHTML = data.map(app => `
+                <tr>
+                    <td><strong>${escapeHtml(app.company)}</strong></td>
+                    <td>${escapeHtml(app.position)}</td>
+                    <td>
+                        <span class="status-pill ${app.status.toLowerCase()}">${app.status}</span>
+                    </td>
+                    <td>${formatAdminDate(app.date_applied)}</td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="btn-icon edit-app" data-id="${app.id}" title="Edit"><i class="fas fa-edit"></i></button>
+                            <button class="btn-icon delete-app" data-id="${app.id}" title="Delete"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            // Pagination Logic
+            const totalPages = Math.ceil(count / adminPageSize);
+            const pagContainer = document.getElementById('appPagination');
+            if (pagContainer) {
+                pagContainer.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 8px;">
+                        <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                            Showing ${(currentApplicationsPage - 1) * adminPageSize + 1} to ${Math.min(currentApplicationsPage * adminPageSize, count)} of ${count} applications
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn btn-sm" id="prevApps" ${currentApplicationsPage === 1 ? 'disabled' : ''}>
+                                <i class="fas fa-chevron-left"></i> Previous
+                            </button>
+                            <button class="btn btn-sm" id="nextApps" ${currentApplicationsPage === totalPages ? 'disabled' : ''}>
+                                Next <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('prevApps')?.addEventListener('click', () => initApplicationsPage(currentApplicationsPage - 1));
+                document.getElementById('nextApps')?.addEventListener('click', () => initApplicationsPage(currentApplicationsPage + 1));
+            }
+
+            // Listeners
+            tbody.querySelectorAll('.edit-app').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-id');
+                    const item = data.find(a => a.id === id);
+                    if (item) openApplicationModal('edit', item);
+                });
+            });
+
+            tbody.querySelectorAll('.delete-app').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-id');
+                    handleApplicationDelete(id);
+                });
+            });
+
+        } catch (error) {
+            console.error('Render applications error:', error);
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--danger);">Failed to load applications.</td></tr>';
+        }
+    };
+
+    const openApplicationModal = (mode, item = null) => {
+        const isEdit = mode === 'edit';
+        const title = isEdit ? 'Edit Application' : 'Add New Application';
+        
+        const content = `
+            <div class="form-group">
+                <label>Company Name</label>
+                <input type="text" id="appCompany" value="${isEdit ? escapeHtml(item.company) : ''}" placeholder="e.g. Google">
+            </div>
+            <div class="form-group">
+                <label>Position / Role</label>
+                <input type="text" id="appPosition" value="${isEdit ? escapeHtml(item.position) : ''}" placeholder="e.g. Frontend Developer">
+            </div>
+            <div class="form-group">
+                <label>Job URL (Optional)</label>
+                <input type="url" id="appUrl" value="${isEdit ? escapeHtml(item.job_url || '') : ''}" placeholder="https://linkedin.com/jobs/...">
+            </div>
+            <div class="form-group">
+                <label>Status</label>
+                <select id="appStatus">
+                    <option value="Applied" ${isEdit && item.status === 'Applied' ? 'selected' : ''}>Applied</option>
+                    <option value="Interviewing" ${isEdit && item.status === 'Interviewing' ? 'selected' : ''}>Interviewing</option>
+                    <option value="Offered" ${isEdit && item.status === 'Offered' ? 'selected' : ''}>Offered</option>
+                    <option value="Rejected" ${isEdit && item.status === 'Rejected' ? 'selected' : ''}>Rejected</option>
+                    <option value="Ghosted" ${isEdit && item.status === 'Ghosted' ? 'selected' : ''}>Ghosted</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Date Applied</label>
+                <input type="date" id="appDate" value="${isEdit ? item.date_applied : new Date().toISOString().split('T')[0]}">
+            </div>
+            <div class="form-group">
+                <label>Notes (Optional)</label>
+                <textarea id="appNotes" rows="3" placeholder="Additional details...">${isEdit ? escapeHtml(item.notes || '') : ''}</textarea>
+            </div>
+        `;
+
+        window.openModal(title, content, async () => {
+            const company = document.getElementById('appCompany').value.trim();
+            const position = document.getElementById('appPosition').value.trim();
+            const job_url = document.getElementById('appUrl').value.trim();
+            const status = document.getElementById('appStatus').value;
+            const date_applied = document.getElementById('appDate').value;
+            const notes = document.getElementById('appNotes').value.trim();
+
+            if (!company || !position) {
+                showToast('Company and position are required', true);
+                throw new Error('Required fields missing');
+            }
+
+            const appData = { company, position, job_url, status, date_applied, notes };
+
+            try {
+                let res;
+                if (isEdit) {
+                    res = await window.supabase.from('applications').update(appData).eq('id', item.id);
+                } else {
+                    res = await window.supabase.from('applications').insert([appData]);
+                }
+
+                if (res.error) throw res.error;
+
+                showToast(`Application ${isEdit ? 'updated' : 'added'} successfully`);
+                await logActivity(isEdit ? 'Updated' : 'Added', `Application: ${company} - ${position}`);
+                renderApplications();
+            } catch (error) {
+                console.error('Save application error:', error);
+                showToast('Failed to save application: ' + error.message, true);
+                throw error;
+            }
+        });
+    };
+
+    const handleApplicationDelete = async (id) => {
+        const title = 'Confirm Deletion';
+        const content = `<p>Are you sure you want to delete this application record? This action cannot be undone.</p>`;
+
+        window.openModal(title, content, async () => {
+            try {
+                const { data: item } = await window.supabase.from('applications').select('company, position').eq('id', id).single();
+                
+                const { error } = await window.supabase.from('applications').delete().eq('id', id);
+                if (error) throw error;
+
+                showToast('Application deleted successfully');
+                if (item) await logActivity('Deleted', `Application: ${item.company} - ${item.position}`);
+                renderApplications();
+            } catch (error) {
+                console.error('Delete application error:', error);
+                showToast('Failed to delete application', true);
+                throw error;
+            }
+        });
+
+        const btn = document.getElementById('saveModal');
+        if (btn) {
+            btn.textContent = 'Delete';
+            btn.classList.add('btn-danger');
+        }
+    };
+
+    // Logout Handler
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
