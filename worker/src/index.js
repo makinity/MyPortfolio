@@ -11,18 +11,25 @@ const getCorsHeaders = (requestOrigin, env) => {
     const allowedOrigins = parseAllowedOrigins(env.ALLOWED_ORIGINS);
     const allowNullOrigin = env.ALLOW_NULL_ORIGIN === "true";
 
+    // Normalize origin (remove trailing slash)
+    const normalizedOrigin = requestOrigin ? requestOrigin.replace(/\/$/, "") : "";
+
     let allowedOrigin = "";
-    if (requestOrigin === "null" && allowNullOrigin) {
+    if (normalizedOrigin === "null" && allowNullOrigin) {
         allowedOrigin = "null";
-    } else if (allowedOrigins.includes(requestOrigin)) {
-        allowedOrigin = requestOrigin;
+    } else {
+        // Check if normalized origin is in the list (also normalized)
+        const isAllowed = allowedOrigins.some(o => o.replace(/\/$/, "").toLowerCase() === normalizedOrigin.toLowerCase());
+        if (isAllowed) {
+            allowedOrigin = requestOrigin;
+        }
     }
 
     return allowedOrigin
         ? {
             "Access-Control-Allow-Origin": allowedOrigin,
             "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
             "Vary": "Origin",
         }
         : {};
@@ -647,18 +654,23 @@ const handleResumeTailorRequest = async (payload, env, corsHeaders) => {
     const messages = [
         {
             role: "system",
-            content: `You are an expert Career Coach and Resume Optimizer. Your goal is to help the user honestly refine their resume to better align with a specific Job Description. 
+            content: `You are an expert Career Coach and Resume Optimizer. Your goal is to provide a REFINED version of the user's resume that aligns honestly with the provided Job Description.
+            
+            Output Structure:
+            1. Brief Analysis: A 1-2 sentence summary of the "match" between the user and the JD.
+            2. REFINED RESUME: The complete, tailored version of the resume. 
+               - Re-phrase existing bullet points to use JD keywords (ATS optimization).
+               - Optimize the Professional Summary for impact.
+               - Keep it extremely professional and ready to copy.
             
             Strict Guidelines:
-            1. HONESTY: Do not invent experiences, roles, or skills that are not present in the original resume.
-            2. ALIGNMENT: Identify key keywords and skills in the Job Description (JD) that the user already has but might have phrased differently.
-            3. OPTIMIZATION: Suggest re-phrasing existing bullet points to match the JD's terminology (ATS optimization).
-            4. STRUCTURE: Provide a "Tailored Professional Summary", a list of "Key Skills to Highlight", and "Bullet Point Improvements".
-            5. FORMAT: Use clean Markdown for the response.`
+            1. HONESTY: Do not invent experiences, roles, or skills. Only re-phrase and re-prioritize what is already there.
+            2. DIRECTNESS: Do NOT explain the changes (e.g., do not say "I changed X to Y"). Just provide the refined text.
+            3. FORMAT: Use clean Markdown.`
         },
         {
             role: "user",
-            content: `ORIGINAL RESUME TEXT:\n${resumeText}\n\nTARGET JOB DESCRIPTION:\n${jobDescription}\n\nPlease provide an honest refinement analysis.`
+            content: `ORIGINAL RESUME TEXT:\n${resumeText}\n\nTARGET JOB DESCRIPTION:\n${jobDescription}\n\nPlease provide the refined version.`
         }
     ];
 
@@ -703,7 +715,11 @@ export default {
 
         if (request.method === "OPTIONS") {
             if (!Object.keys(corsHeaders).length) {
-                return new Response(null, { status: 403 });
+                console.error("CORS_REJECTED:", requestOrigin);
+                return json(
+                    { error: "Origin not allowed", origin: requestOrigin },
+                    { status: 403 }
+                );
             }
 
             return new Response(null, {
