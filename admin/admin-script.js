@@ -1664,7 +1664,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     if (file) {
                         // 1. Upload new profile image
-                        const fileName = `images/profile/${Date.now()}-${file.name}`;
+                        const sanitizedName = sanitizeFileName(file.name);
+                        const fileName = `images/profile/${Date.now()}-${sanitizedName}`;
                         const { error: upErr } = await window.supabase.storage
                             .from('Gallery')
                             .upload(fileName, file);
