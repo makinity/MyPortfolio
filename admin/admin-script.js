@@ -625,6 +625,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     const id = btn.getAttribute('data-id');
                     const item = data.find(p => String(p.id) === String(id));
                     
+                    let displayUrl = item.image_url || '';
+                    if (displayUrl && !(displayUrl.startsWith('http') || displayUrl.startsWith('blob:') || displayUrl.startsWith('data:'))) {
+                        let cleanPath = displayUrl.startsWith('/') ? displayUrl.substring(1) : displayUrl;
+                        displayUrl = cleanPath.startsWith('assets/') ? '../' + cleanPath : '../assets/' + cleanPath;
+                    }
+                    
                     const content = `
                         <div style="margin-bottom: 1.5rem;">
                             <label style="display: block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--blue-accent); margin-bottom: 0.4rem; letter-spacing: 0.05em;">Project Title</label>
@@ -635,8 +641,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div style="font-size: 0.95rem; color: var(--text-primary); line-height: 1.6; white-space: pre-wrap;">${item.description || 'No description available.'}</div>
                         </div>
                         <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 12px; border: 1px solid var(--border);">
-                            ${item.image_url ? 
-                                `<img src="${item.image_url}" style="width: 100%; border-radius: 6px; display: block; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">` : 
+                            ${displayUrl ? 
+                                `<img src="${displayUrl}" style="width: 100%; border-radius: 6px; display: block; box-shadow: 0 4px 20px rgba(0,0,0,0.3);" onerror="this.src='../assets/images/gallery/placeholder.jpg'">` : 
                                 `<div style="padding: 3rem; text-align: center; color: var(--text-secondary);"><i class="fas fa-image" style="font-size: 2rem; display: block; margin-bottom: 1rem; opacity: 0.3;"></i>No Image Available</div>`
                             }
                         </div>
