@@ -1649,6 +1649,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
+            let currentProfile = data; // Keep track of current profile record
+
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const saveBtn = form.querySelector('button[type="submit"]');
@@ -1656,31 +1658,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 const fileInput = document.getElementById('profFile');
                 const file = fileInput.files[0];
 
+                console.log('Starting profile save...', { hasFile: !!file });
+
                 try {
                     saveBtn.disabled = true;
                     saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
 
-                    let imageUrl = data?.profile_image_url || '';
+                    let imageUrl = currentProfile?.profile_image_url || '';
 
                     if (file) {
-                        // 1. Upload new profile image
+                        console.log('Uploading new profile image...');
                         const sanitizedName = sanitizeFileName(file.name);
                         const fileName = `images/profile/${Date.now()}-${sanitizedName}`;
+                        
                         const { error: upErr } = await window.supabase.storage
                             .from('Gallery')
                             .upload(fileName, file);
                         
-                        if (upErr) throw upErr;
+                        if (upErr) {
+                            console.error('Upload error:', upErr);
+                            throw upErr;
+                        }
 
                         const { data: urlData } = window.supabase.storage
                             .from('Gallery')
                             .getPublicUrl(fileName);
                         
-                        // 2. Delete old image if it exists and is in Supabase storage
-                        if (data?.profile_image_url && data.profile_image_url.includes('storage/v1/object/public/Gallery/')) {
-                            const pathParts = data.profile_image_url.split('/Gallery/');
-                            if (pathParts.length > 1) {
-                                await window.supabase.storage.from('Gallery').remove([pathParts[1]]);
+                        console.log('New image URL:', urlData.publicUrl);
+
+                        // Delete old image if it exists
+                        if (currentProfile?.profile_image_url && currentProfile.profile_image_url.includes('/Gallery/')) {
+                            try {
+                                const oldPath = currentProfile.profile_image_url.split('/Gallery/')[1];
+                                console.log('Deleting old image:', oldPath);
+                                await window.supabase.storage.from('Gallery').remove([oldPath]);
+                            } catch (delErr) {
+                                console.warn('Failed to delete old image (non-critical):', delErr);
                             }
                         }
 
@@ -1696,17 +1709,26 @@ document.addEventListener('DOMContentLoaded', () => {
                         about_text_secondary: document.getElementById('profAboutSecondary').value
                     };
 
+                    console.log('Updating profile in database...', profileData);
+
                     let res;
-                    if (data && data.id) {
-                        res = await window.supabase.from('profile').update(profileData).eq('id', data.id);
+                    if (currentProfile && currentProfile.id) {
+                        res = await window.supabase.from('profile').update(profileData).eq('id', currentProfile.id).select().single();
                     } else {
-                        res = await window.supabase.from('profile').insert([profileData]);
+                        res = await window.supabase.from('profile').insert([profileData]).select().single();
                     }
 
-                    if (res.error) throw res.error;
+                    if (res.error) {
+                        console.error('Database update error:', res.error);
+                        throw res.error;
+                    }
+
+                    console.log('Profile saved successfully!', res.data);
+                    currentProfile = res.data; // Update local state
 
                     showToast('Profile updated successfully');
                     await logActivity('Updated', 'Profile Details');
+                    
                     if (file) {
                         const parts = imageUrl.split('/');
                         document.getElementById('currentImageName').textContent = `Current: ${parts[parts.length - 1]}`;
@@ -1714,7 +1736,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 } catch (error) {
                     console.error('Profile save error:', error);
-                    showToast('Failed to save profile: ' + error.message, true);
+                    showToast('Failed to save profile: ' + (error.message || error.error_description || 'Unknown error'), true);
                 } finally {
                     saveBtn.disabled = false;
                     saveBtn.innerHTML = originalHtml;
