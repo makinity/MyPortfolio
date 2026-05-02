@@ -1086,4 +1086,39 @@ body {
     transform: scale(1.1);
 }
 
+.profile-header-flex {
+    display: flex;
+    gap: 2.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+    align-items: flex-start;
+}
+
+.profile-image-section {
+    flex: 0 0 auto;
+    text-align: center;
+}
+
+.profile-info-section {
+    flex: 1;
+    min-width: 300px;
+}
+
+@media (max-width: 768px) {
+    .profile-header-flex {
+        flex-direction: column;
+        align-items: center;
+        gap: 1.5rem;
+    }
+    
+    .profile-image-section {
+        width: 100%;
+    }
+    
+    .profile-info-section {
+        width: 100%;
+        min-width: unset;
+    }
+}
+
 

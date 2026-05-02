@@ -1713,18 +1713,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     let res;
                     if (currentProfile && currentProfile.id) {
-                        res = await window.supabase.from('profile').update(profileData).eq('id', currentProfile.id).select().single();
+                        res = await window.supabase.from('profile').update(profileData).eq('id', currentProfile.id).select();
                     } else {
-                        res = await window.supabase.from('profile').insert([profileData]).select().single();
+                        res = await window.supabase.from('profile').insert([profileData]).select();
                     }
 
                     if (res.error) {
-                        console.error('Database update error:', res.error);
+                        console.error('Database error:', res.error);
                         throw res.error;
                     }
 
-                    console.log('Profile saved successfully!', res.data);
-                    currentProfile = res.data; // Update local state
+                    const savedData = res.data && res.data.length > 0 ? res.data[0] : null;
+                    if (!savedData) throw new Error('No data returned after save');
+
+                    console.log('Profile saved successfully!', savedData);
+                    currentProfile = savedData; // Update local state
 
                     showToast('Profile updated successfully');
                     await logActivity('Updated', 'Profile Details');
