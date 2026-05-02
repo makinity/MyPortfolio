@@ -113,6 +113,41 @@
     <!-- Notification Toast -->
     <div id="toast" class="toast">Action completed successfully.</div>
 
+    <!-- Chatbot UI -->
+    <aside class="chatbot-panel" id="chatbotPanel" aria-hidden="true" aria-label="MakiBot chat assistant">
+        <div class="chatbot-header">
+            <div class="chatbot-meta">
+                <div class="chatbot-avatar">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div>
+                    <div class="chatbot-title">MakiBot</div>
+                    <div class="chatbot-subtitle">Admin Assistant Mode</div>
+                </div>
+            </div>
+            <button class="chatbot-close" id="chatbotClose" type="button" aria-label="Close chatbot">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="chatbot-messages" id="chatbotMessages">
+            <div class="chatbot-message assistant">
+                <div class="chatbot-bubble">Hello Boss! I'm ready to help you manage your portfolio. What's on your mind?</div>
+            </div>
+        </div>
+        <form class="chatbot-composer" id="chatbotForm">
+            <label class="sr-only" for="chatbotInput">Type your message</label>
+            <textarea class="chatbot-input" id="chatbotInput" rows="2" placeholder="Ask something..."></textarea>
+            <button class="chatbot-send" id="chatbotSend" type="submit" aria-label="Send message">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </form>
+    </aside>
+
+    <button class="chatbot-launcher" id="chatbotToggle" type="button" aria-label="Open chatbot" aria-expanded="false"
+        aria-controls="chatbotPanel">
+        <i class="fas fa-robot"></i>
+    </button>
+
     <script src="admin-script.js"></script>
 </body>
 

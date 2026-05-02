@@ -322,6 +322,10 @@ const handleChatRequest = async (payload, requestOrigin, env, corsHeaders) => {
             role: "system",
             content: env.SYSTEM_PROMPT || "You are a helpful portfolio assistant."
         },
+        ...(payload?.isAdmin ? [{
+            role: "system",
+            content: "You are currently chatting with MakiDev (Marky Vencent), the owner of this portfolio. You are in his private admin dashboard. Acknowledge him as 'Boss', 'Maki', or 'Sir' and be extra helpful with dashboard tasks."
+        }] : []),
         ...(knowledge
             ? [{
                 role: "system",

@@ -2835,6 +2835,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                         </div>
 
+                        <div style="background: rgba(255,255,255,0.03); padding: 1.25rem; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 1.5rem;">
+                            <label style="display: block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--blue-accent); margin-bottom: 0.75rem; letter-spacing: 0.05em;">Job Description</label>
+                            <div style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.7; white-space: pre-wrap; max-height: 200px; overflow-y: auto;">${item.job_description || 'No job description provided.'}</div>
+                        </div>
+
                         <div style="background: rgba(255,255,255,0.03); padding: 1.25rem; border-radius: 12px; border: 1px solid var(--border);">
                             <label style="display: block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--blue-accent); margin-bottom: 0.75rem; letter-spacing: 0.05em;">Application Notes</label>
                             <div style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.7; white-space: pre-wrap;">${item.notes || 'No notes added for this application.'}</div>
@@ -2910,6 +2915,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
             <div class="form-group">
+                <label><i class="fas fa-file-alt" style="margin-right: 0.5rem;"></i>Job Description (Optional)</label>
+                <textarea id="appDescription" rows="4" placeholder="Paste the job description here...">${isEdit ? escapeHtml(item.job_description || '') : ''}</textarea>
+            </div>
+            <div class="form-group">
                 <label><i class="fas fa-sticky-note" style="margin-right: 0.5rem;"></i>Notes (Optional)</label>
                 <textarea id="appNotes" rows="3" placeholder="Additional details...">${isEdit ? escapeHtml(item.notes || '') : ''}</textarea>
             </div>
@@ -2921,6 +2930,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const job_url = document.getElementById('appUrl').value.trim();
             const status = document.getElementById('appStatus').value;
             const date_applied = document.getElementById('appDate').value;
+            const job_description = document.getElementById('appDescription').value.trim();
             const notes = document.getElementById('appNotes').value.trim();
 
             if (!company || !position) {
@@ -2928,7 +2938,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error('Required fields missing');
             }
 
-            const appData = { company, position, job_url, status, date_applied, notes };
+            const appData = { company, position, job_url, status, date_applied, job_description, notes };
 
             try {
                 let res;
@@ -2985,7 +2995,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="tailor-container">
                 <div class="form-group" style="margin-bottom: 1.5rem;">
                     <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Job Description</label>
-                    <textarea id="tailorJD" rows="8" placeholder="Paste the full job description here..." style="width: 100%; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; color: var(--text-primary); font-family: inherit; resize: vertical;"></textarea>
+                    <textarea id="tailorJD" rows="8" placeholder="Paste the full job description here..." style="width: 100%; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; color: var(--text-primary); font-family: inherit; resize: vertical;">${escapeHtml(app.job_description || '')}</textarea>
                     <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.5rem;">Grok will analyze this JD against your active resume.</p>
                 </div>
                 
@@ -3126,4 +3136,117 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // --- MakiBot Admin Integration ---
+    const initChatbot = () => {
+        const chatbotPanel = document.getElementById('chatbotPanel');
+        const chatbotToggle = document.getElementById('chatbotToggle');
+        const chatbotClose = document.getElementById('chatbotClose');
+        const chatbotMessages = document.getElementById('chatbotMessages');
+        const chatbotForm = document.getElementById('chatbotForm');
+        const chatbotInput = document.getElementById('chatbotInput');
+        const chatbotSend = document.getElementById('chatbotSend');
+        
+        const CHATBOT_CONFIG = {
+            apiUrl: 'https://portfolio-chat.makidevportfolio.workers.dev/chat',
+            assistantName: 'MakiBot'
+        };
+
+        let chatbotHistory = [];
+        let isChatRequestPending = false;
+
+        const setChatbotOpen = (isOpen) => {
+            if (!chatbotPanel || !chatbotToggle) return;
+            chatbotPanel.classList.toggle('open', isOpen);
+            chatbotPanel.setAttribute('aria-hidden', String(!isOpen));
+            chatbotToggle.setAttribute('aria-expanded', String(isOpen));
+            if (isOpen && chatbotInput) {
+                setTimeout(() => chatbotInput.focus(), 120);
+            }
+        };
+
+        const appendChatMessage = (role, text, isPending = false) => {
+            if (!chatbotMessages) return null;
+            const messageEl = document.createElement('div');
+            messageEl.className = `chatbot-message ${role}${isPending ? ' pending' : ''}`;
+            const bubbleEl = document.createElement('div');
+            bubbleEl.className = 'chatbot-bubble';
+            bubbleEl.textContent = text;
+            messageEl.appendChild(bubbleEl);
+            chatbotMessages.appendChild(messageEl);
+            chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+            return messageEl;
+        };
+
+        const updateChatMessage = (messageEl, text, isPending = false) => {
+            if (!messageEl) return;
+            messageEl.classList.toggle('pending', isPending);
+            const bubbleEl = messageEl.querySelector('.chatbot-bubble');
+            if (bubbleEl) bubbleEl.textContent = text;
+            chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+        };
+
+        const setChatControlsDisabled = (isDisabled) => {
+            isChatRequestPending = isDisabled;
+            if (chatbotInput) chatbotInput.disabled = isDisabled;
+            if (chatbotSend) chatbotSend.disabled = isDisabled;
+        };
+
+        const sendChatMessage = async (message) => {
+            const response = await fetch(CHATBOT_CONFIG.apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message,
+                    history: chatbotHistory.slice(-10),
+                    isAdmin: true // This flag identifies the user as MakiDev
+                })
+            });
+
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(data.error || 'Unable to reach the chatbot service.');
+            }
+            return data.reply || 'No reply received.';
+        };
+
+        if (chatbotToggle) {
+            chatbotToggle.addEventListener('click', () => {
+                setChatbotOpen(!chatbotPanel.classList.contains('open'));
+            });
+        }
+
+        if (chatbotClose) {
+            chatbotClose.addEventListener('click', () => setChatbotOpen(false));
+        }
+
+        if (chatbotForm) {
+            chatbotForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (!chatbotInput || isChatRequestPending) return;
+
+                const message = chatbotInput.value.trim();
+                if (!message) return;
+
+                appendChatMessage('user', message);
+                chatbotHistory.push({ role: 'user', content: message });
+                chatbotInput.value = '';
+                setChatControlsDisabled(true);
+
+                const pendingMessage = appendChatMessage('assistant', 'MakiBot is thinking...', true);
+
+                try {
+                    const reply = await sendChatMessage(message);
+                    updateChatMessage(pendingMessage, reply);
+                    chatbotHistory.push({ role: 'assistant', content: reply });
+                } catch (error) {
+                    updateChatMessage(pendingMessage, error.message);
+                } finally {
+                    setChatControlsDisabled(false);
+                }
+            });
+        }
+    };
+
+    initChatbot();
 });
