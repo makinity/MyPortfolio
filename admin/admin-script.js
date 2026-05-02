@@ -573,9 +573,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             tbody.innerHTML = paginatedData.map(project => {
                 let displayUrl = project.image_url || '';
-                if (!(displayUrl.startsWith('http') || displayUrl.startsWith('blob:') || displayUrl.startsWith('data:'))) {
-                    let cleanPath = displayUrl.startsWith('/') ? displayUrl.substring(1) : displayUrl;
-                    displayUrl = cleanPath.startsWith('assets/') ? '../' + cleanPath : '../assets/' + cleanPath;
+                if (displayUrl && !displayUrl.startsWith('http') && !displayUrl.startsWith('blob:') && !displayUrl.startsWith('data:')) {
+                    if (displayUrl.includes('assets/')) {
+                        let cleanPath = displayUrl.startsWith('/') ? displayUrl.substring(1) : displayUrl;
+                        displayUrl = cleanPath.startsWith('assets/') ? '../' + cleanPath : '../assets/' + cleanPath;
+                    }
                 }
 
                 return `
@@ -626,9 +628,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     const item = data.find(p => String(p.id) === String(id));
                     
                     let displayUrl = item.image_url || '';
-                    if (displayUrl && !(displayUrl.startsWith('http') || displayUrl.startsWith('blob:') || displayUrl.startsWith('data:'))) {
-                        let cleanPath = displayUrl.startsWith('/') ? displayUrl.substring(1) : displayUrl;
-                        displayUrl = cleanPath.startsWith('assets/') ? '../' + cleanPath : '../assets/' + cleanPath;
+                    if (displayUrl && !displayUrl.startsWith('http') && !displayUrl.startsWith('blob:') && !displayUrl.startsWith('data:')) {
+                        // Only fix path if it's explicitly a local asset path
+                        if (displayUrl.includes('assets/')) {
+                            let cleanPath = displayUrl.startsWith('/') ? displayUrl.substring(1) : displayUrl;
+                            displayUrl = cleanPath.startsWith('assets/') ? '../' + cleanPath : '../assets/' + cleanPath;
+                        }
                     }
                     
                     const content = `
