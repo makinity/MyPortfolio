@@ -58,7 +58,7 @@
             btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Authenticating...';
             msg.textContent = '';
 
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            const { data, error } = await window.supabase.auth.signInWithPassword({ email, password });
             if (error) {
                 msg.textContent = 'Login failed – please check your credentials.';
                 btn.disabled = false;

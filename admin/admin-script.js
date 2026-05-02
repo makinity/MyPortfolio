@@ -16,8 +16,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const toast = document.getElementById('toast');
         if (!toast) return;
         
-        toast.textContent = message;
-        toast.style.background = isError ? 'var(--danger)' : 'var(--success)';
+        const icon = isError ? 'fa-circle-xmark' : 'fa-circle-check';
+        toast.innerHTML = `<i class="fas ${icon}"></i><span>${message}</span>`;
+        
+        toast.classList.remove('success', 'error');
+        toast.classList.add(isError ? 'error' : 'success');
         
         toast.classList.add('show');
         setTimeout(() => {
@@ -3125,14 +3128,25 @@ document.addEventListener('DOMContentLoaded', () => {
     if (logoutBtn) {
         logoutBtn.addEventListener('click', async (e) => {
             e.preventDefault();
-            if (confirm('Are you sure you want to logout?')) {
+            
+            const content = `<p style="color: var(--text-secondary); line-height: 1.6; margin: 0;">Are you sure you want to end your current session and logout from the admin dashboard?</p>`;
+            
+            window.openModal('Confirm Logout', content, async () => {
+                showToast('Logging out...');
                 const { error } = await window.supabase.auth.signOut();
                 if (error) {
                     console.error('Logout error:', error);
-                    showToast('Logout failed', true);
+                    showToast('Logout failed: ' + error.message, true);
                 } else {
                     window.location.href = 'login/';
                 }
+            });
+            
+            // Customize modal button for logout
+            const saveBtn = document.getElementById('saveModal');
+            if (saveBtn) {
+                saveBtn.textContent = 'Logout';
+                saveBtn.className = 'btn btn-danger btn-sm';
             }
         });
     }
