@@ -303,17 +303,67 @@ body {
     color: var(--blue-primary);
 }
 
-/* --- Dashboard/Page Components --- */
+/* --- Admin Layout Shell --- */
 .page-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 1.5rem;
     margin-bottom: 2rem;
 }
 
-.page-title {
-    font-size: 1.75rem;
-    font-weight: 600;
+.search-container {
+    display: flex;
+    flex: 1;
+    max-width: 500px;
+    position: relative;
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.7rem 1rem 0.7rem 2.8rem !important;
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 8px !important;
+    color: var(--text-primary) !important;
+    font-size: 0.95rem;
+}
+
+.search-input:focus {
+    outline: none !important;
+    border-color: var(--blue-primary) !important;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15) !important;
+}
+
+.search-container i {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+    pointer-events: none;
+}
+
+.header-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.btn-add {
+    width: auto !important;
+    padding: 0.7rem 1.5rem !important;
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+    
+    .search-container {
+        max-width: 100%;
+    }
 }
 
 .btn-sm {

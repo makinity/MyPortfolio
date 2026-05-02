@@ -88,6 +88,15 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentProjectsPage = 1;
     let currentTechPage = 1;
     let currentApplicationsPage = 1;
+    let gallerySearchTerm = '';
+    let projectSearchTerm = '';
+    let resumeSearchTerm = '';
+    let appSearchTerm = '';
+    let factSearchTerm = '';
+    let skillSearchTerm = '';
+    let techSearchTerm = '';
+    let socialSearchTerm = '';
+    let messageSearchTerm = '';
     const adminPageSize = 10;
     const resumeBucketName = 'resumes';
     const resumePreviewMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -259,8 +268,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const initGalleryPage = async (page = 1) => {
         currentGalleryPage = page;
         const btnUpload = document.getElementById('btnUploadImage');
+        const searchInput = document.getElementById('gallerySearch');
         if (btnUpload) {
             btnUpload.addEventListener('click', () => openGalleryModal('add'));
+        }
+        if (searchInput) {
+            searchInput.value = gallerySearchTerm;
+            searchInput.addEventListener('input', (e) => {
+                gallerySearchTerm = e.target.value.toLowerCase();
+                currentGalleryPage = 1;
+                renderGallery();
+            });
         }
         await renderGallery();
     };
@@ -277,16 +295,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (error) throw error;
 
-            if (!data || data.length === 0) {
-                grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 2rem; color: var(--text-secondary);">No images in gallery yet.</p>';
+            let filteredData = data || [];
+            if (gallerySearchTerm) {
+                filteredData = filteredData.filter(item => 
+                    (item.caption && item.caption.toLowerCase().includes(gallerySearchTerm))
+                );
+            }
+
+            if (filteredData.length === 0) {
+                grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; padding: 2rem; color: var(--text-secondary);">${gallerySearchTerm ? 'No matching images found.' : 'No images in gallery yet.'}</p>`;
                 return;
             }
 
             // Pagination Logic
-            const totalItems = data.length;
+            const totalItems = filteredData.length;
             const totalPages = Math.ceil(totalItems / adminPageSize);
             const startIndex = (currentGalleryPage - 1) * adminPageSize;
-            const paginatedData = data.slice(startIndex, startIndex + adminPageSize);
+            const paginatedData = filteredData.slice(startIndex, startIndex + adminPageSize);
 
             grid.innerHTML = paginatedData.map(item => {
                 let displayUrl = item.image_url || '';
@@ -500,8 +525,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const initProjectsPage = async (page = 1) => {
         currentProjectsPage = page;
         const btnAdd = document.getElementById('addProjectBtn');
+        const searchInput = document.getElementById('projectSearch');
         if (btnAdd) {
             btnAdd.addEventListener('click', () => openProjectModal('add'));
+        }
+        if (searchInput) {
+            searchInput.value = projectSearchTerm;
+            searchInput.addEventListener('input', (e) => {
+                projectSearchTerm = e.target.value.toLowerCase();
+                currentProjectsPage = 1;
+                renderProjects();
+            });
         }
         await renderProjects();
     };
@@ -518,16 +552,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (error) throw error;
 
-            if (!data || data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No projects found.</td></tr>';
+            let filteredData = data || [];
+            if (projectSearchTerm) {
+                filteredData = filteredData.filter(item => 
+                    (item.title && item.title.toLowerCase().includes(projectSearchTerm)) ||
+                    (item.tags && item.tags.some(tag => tag.toLowerCase().includes(projectSearchTerm)))
+                );
+            }
+
+            if (filteredData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">${projectSearchTerm ? 'No matching projects found.' : 'No projects found.'}</td></tr>`;
                 return;
             }
 
             // Pagination Logic
-            const totalItems = data.length;
+            const totalItems = filteredData.length;
             const totalPages = Math.ceil(totalItems / adminPageSize);
             const startIndex = (currentProjectsPage - 1) * adminPageSize;
-            const paginatedData = data.slice(startIndex, startIndex + adminPageSize);
+            const paginatedData = filteredData.slice(startIndex, startIndex + adminPageSize);
 
             tbody.innerHTML = paginatedData.map(project => {
                 let displayUrl = project.image_url || '';
@@ -738,8 +780,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Resume Management ---
     const initResumePage = async () => {
         const btnAdd = document.getElementById('addResumeBtn');
+        const searchInput = document.getElementById('resumeSearch');
         if (btnAdd) {
             btnAdd.addEventListener('click', () => openResumeModal('add'));
+        }
+        if (searchInput) {
+            searchInput.value = resumeSearchTerm;
+            searchInput.addEventListener('input', (e) => {
+                resumeSearchTerm = e.target.value.toLowerCase();
+                renderResumes();
+            });
         }
         await renderResumes();
     };
@@ -756,8 +806,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (error) throw error;
 
-            if (!data || data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No resumes uploaded yet.</td></tr>';
+            let filteredData = data || [];
+            if (resumeSearchTerm) {
+                filteredData = filteredData.filter(item => 
+                    (item.title && item.title.toLowerCase().includes(resumeSearchTerm))
+                );
+            }
+
+            if (filteredData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-secondary);">${resumeSearchTerm ? 'No matching resumes found.' : 'No resumes uploaded yet.'}</td></tr>`;
                 return;
             }
 
@@ -1107,8 +1164,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const initTechStackPage = async (page = 1) => {
         currentTechPage = page;
         const btnAdd = document.getElementById('addTechBtn');
+        const searchInput = document.getElementById('techSearch');
         if (btnAdd) {
             btnAdd.addEventListener('click', () => openTechStackModal('add'));
+        }
+        if (searchInput) {
+            searchInput.value = techSearchTerm;
+            searchInput.addEventListener('input', (e) => {
+                techSearchTerm = e.target.value.toLowerCase();
+                currentTechPage = 1;
+                renderTechStack();
+            });
         }
         await renderTechStack();
     };
@@ -1125,16 +1191,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (error) throw error;
 
-            if (!data || data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No tech stack items found.</td></tr>';
+            let filteredData = data || [];
+            if (techSearchTerm) {
+                filteredData = filteredData.filter(item => 
+                    (item.name && item.name.toLowerCase().includes(techSearchTerm))
+                );
+            }
+
+            if (filteredData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-secondary);">${techSearchTerm ? 'No matching tech stack items found.' : 'No tech stack items found.'}</td></tr>`;
                 return;
             }
 
             // Pagination Logic
-            const totalItems = data.length;
+            const totalItems = filteredData.length;
             const totalPages = Math.ceil(totalItems / adminPageSize);
             const startIndex = (currentTechPage - 1) * adminPageSize;
-            const paginatedData = data.slice(startIndex, startIndex + adminPageSize);
+            const paginatedData = filteredData.slice(startIndex, startIndex + adminPageSize);
 
             tbody.innerHTML = paginatedData.map(tech => `
                 <tr>
@@ -1286,9 +1359,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Side Skills ---
     const initSideSkillsPage = async () => {
-        const btnAdd = document.getElementById('addSideSkillBtn');
+        const btnAdd = document.getElementById('addSkillBtn');
+        const searchInput = document.getElementById('skillSearch');
         if (btnAdd) {
             btnAdd.addEventListener('click', () => openSideSkillModal('add'));
+        }
+        if (searchInput) {
+            searchInput.value = skillSearchTerm;
+            searchInput.addEventListener('input', (e) => {
+                skillSearchTerm = e.target.value.toLowerCase();
+                renderSideSkills();
+            });
         }
         await renderSideSkills();
     };
@@ -1305,8 +1386,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (error) throw error;
 
-            if (!data || data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No side skills found.</td></tr>';
+            let filteredData = data || [];
+            if (skillSearchTerm) {
+                filteredData = filteredData.filter(item => 
+                    (item.text && item.text.toLowerCase().includes(skillSearchTerm))
+                );
+            }
+
+            if (filteredData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-secondary);">${skillSearchTerm ? 'No matching side skills found.' : 'No side skills found.'}</td></tr>`;
                 return;
             }
 
@@ -1613,11 +1701,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Contact Messages ---
     const initMessagesPage = async () => {
         const btnRefresh = document.getElementById('refreshMessages');
+        const searchInput = document.getElementById('messageSearch');
         if (btnRefresh) {
             btnRefresh.addEventListener('click', async () => {
                 btnRefresh.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> Refreshing...';
                 await renderMessages();
                 btnRefresh.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+            });
+        }
+        if (searchInput) {
+            searchInput.value = messageSearchTerm;
+            searchInput.addEventListener('input', (e) => {
+                messageSearchTerm = e.target.value.toLowerCase();
+                currentMessagePage = 1;
+                renderMessages();
             });
         }
         await renderMessages();
@@ -1679,6 +1776,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Sort by date descending
             allMessages.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            // Apply search filter
+            if (messageSearchTerm) {
+                allMessages = allMessages.filter(msg => 
+                    (msg.name && msg.name.toLowerCase().includes(messageSearchTerm)) ||
+                    (msg.email && msg.email.toLowerCase().includes(messageSearchTerm)) ||
+                    (msg.subject && msg.subject.toLowerCase().includes(messageSearchTerm))
+                );
+            }
 
             // Pagination Logic
             const totalMessages = allMessages.length;
@@ -1873,8 +1979,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Social Links ---
     const initSocialLinksPage = async () => {
         const btnAdd = document.getElementById('addSocialBtn');
+        const searchInput = document.getElementById('socialSearch');
         if (btnAdd) {
             btnAdd.addEventListener('click', () => openSocialLinkModal('add'));
+        }
+        if (searchInput) {
+            searchInput.value = socialSearchTerm;
+            searchInput.addEventListener('input', (e) => {
+                socialSearchTerm = e.target.value.toLowerCase();
+                renderSocialLinks();
+            });
         }
         await renderSocialLinks();
     };
@@ -1891,8 +2005,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (error) throw error;
 
-            if (!data || data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No social links found.</td></tr>';
+            let filteredData = data || [];
+            if (socialSearchTerm) {
+                filteredData = filteredData.filter(item => 
+                    (item.platform && item.platform.toLowerCase().includes(socialSearchTerm)) ||
+                    (item.url && item.url.toLowerCase().includes(socialSearchTerm))
+                );
+            }
+
+            if (filteredData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-secondary);">${socialSearchTerm ? 'No matching social links found.' : 'No social links found.'}</td></tr>`;
                 return;
             }
 
@@ -2305,8 +2427,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Quick Facts Management ---
     const initQuickFactsPage = async () => {
         const btnAdd = document.getElementById('addFactBtn');
+        const searchInput = document.getElementById('factSearch');
         if (btnAdd) {
             btnAdd.addEventListener('click', () => openQuickFactModal('add'));
+        }
+        if (searchInput) {
+            searchInput.value = factSearchTerm;
+            searchInput.addEventListener('input', (e) => {
+                factSearchTerm = e.target.value.toLowerCase();
+                renderQuickFacts();
+            });
         }
         await renderQuickFacts();
     };
@@ -2323,8 +2453,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (error) throw error;
 
-            if (!data || data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No facts found.</td></tr>';
+            let filteredData = data || [];
+            if (factSearchTerm) {
+                filteredData = filteredData.filter(item => 
+                    (item.text && item.text.toLowerCase().includes(factSearchTerm))
+                );
+            }
+
+            if (filteredData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-secondary);">${factSearchTerm ? 'No matching facts found.' : 'No facts found.'}</td></tr>`;
                 return;
             }
 
@@ -2442,24 +2579,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Application Tracker Management ---
     const initApplicationsPage = async (page = 1) => {
         currentApplicationsPage = page;
-        const btnAdd = document.getElementById('addApplicationBtn');
-        const searchInput = document.getElementById('appSearchInput');
-        const statusFilter = document.getElementById('appStatusFilter');
+        const btnAdd = document.getElementById('addAppBtn');
+        const searchInput = document.getElementById('appSearch');
 
         if (btnAdd) {
             btnAdd.addEventListener('click', () => openApplicationModal('add'));
         }
 
         if (searchInput) {
-            searchInput.addEventListener('input', () => {
-                currentApplicationsPage = 1; // Reset to first page on search
-                renderApplications();
-            });
-        }
-
-        if (statusFilter) {
-            statusFilter.addEventListener('change', () => {
-                currentApplicationsPage = 1; // Reset to first page on filter
+            searchInput.value = appSearchTerm;
+            searchInput.addEventListener('input', (e) => {
+                appSearchTerm = e.target.value.toLowerCase();
+                currentApplicationsPage = 1; 
                 renderApplications();
             });
         }
@@ -2479,13 +2610,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 .select('*', { count: 'exact' });
 
             // Apply filters
-            if (searchInput && searchInput.value.trim() !== '') {
-                const searchTerm = searchInput.value.trim();
-                query = query.or(`company.ilike.%${searchTerm}%,position.ilike.%${searchTerm}%`);
-            }
-
-            if (statusFilter && statusFilter.value !== 'all') {
-                query = query.eq('status', statusFilter.value);
+            if (appSearchTerm) {
+                query = query.or(`company.ilike.%${appSearchTerm}%,position.ilike.%${appSearchTerm}%,location.ilike.%${appSearchTerm}%`);
             }
 
             const { data, count, error } = await query
