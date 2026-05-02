@@ -1,11 +1,5 @@
-<div class="page-header">
-    <div class="search-container">
-        <i class="fas fa-search"></i>
-        <input type="text" id="appSearch" class="search-input" placeholder="Search applications by company, role or location...">
-    </div>
-    <div class="header-actions">
-        <button class="btn btn-primary btn-add" id="addAppBtn"><i class="fas fa-plus"></i> Log Application</button>
-    </div>
+<div class="page-header" style="margin-bottom: 0; min-height: 0; padding: 0;">
+    <!-- Empty header to maintain layout structure without visible elements -->
 </div>
 
 <div class="card" style="margin-bottom: 1.5rem;">
@@ -13,10 +7,10 @@
         <div class="form-group" style="flex: 1; min-width: 250px; margin-bottom: 0;">
             <div style="position: relative;">
                 <i class="fas fa-search" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-secondary);"></i>
-                <input type="text" id="appSearchInput" placeholder="Search company or position..." style="padding-left: 2.5rem; width: 100%;">
+                <input type="text" id="appSearch" placeholder="Search company or position..." style="padding-left: 2.5rem; width: 100%;">
             </div>
         </div>
-        <div class="form-group" style="width: 200px; margin-bottom: 0;">
+        <div class="form-group" style="width: 180px; margin-bottom: 0;">
             <select id="appStatusFilter" style="width: 100%;">
                 <option value="all">All Statuses</option>
                 <option value="Applied">Applied</option>
@@ -26,6 +20,7 @@
                 <option value="Ghosted">Ghosted</option>
             </select>
         </div>
+        <button class="btn btn-primary btn-add" id="addAppBtn" style="margin-top: 0; height: 42px;"><i class="fas fa-plus"></i> Log Application</button>
     </div>
 </div>
 

@@ -624,15 +624,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.addEventListener('click', () => {
                     const id = btn.getAttribute('data-id');
                     const item = data.find(p => String(p.id) === String(id));
-                    openDetailModal('Project Detail', {
-                        Title: item.title,
-                        Description: item.description,
-                        Tags: item.tags ? item.tags.join(', ') : '—',
-                        Sort_Order: item.sort_order,
-                        Repository: item.repo_link ? `<a href="${item.repo_link}" target="_blank" style="color: var(--blue-accent);">${item.repo_link}</a>` : '—',
-                        Demo: item.demo_link ? `<a href="${item.demo_link}" target="_blank" style="color: var(--blue-accent);">${item.demo_link}</a>` : '—',
-                        Image: item.image_url ? `<img src="${item.image_url}" style="width: 100%; max-height: 200px; object-fit: contain; border-radius: 8px; margin-top: 0.5rem;">` : '—'
-                    });
+                    
+                    const content = `
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="display: block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--blue-accent); margin-bottom: 0.4rem; letter-spacing: 0.05em;">Project Title</label>
+                            <div style="font-size: 1.2rem; font-weight: 600; color: var(--text-primary);">${item.title}</div>
+                        </div>
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="display: block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--blue-accent); margin-bottom: 0.4rem; letter-spacing: 0.05em;">Description</label>
+                            <div style="font-size: 0.95rem; color: var(--text-primary); line-height: 1.6; white-space: pre-wrap;">${item.description || 'No description available.'}</div>
+                        </div>
+                        <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 12px; border: 1px solid var(--border);">
+                            ${item.image_url ? 
+                                `<img src="${item.image_url}" style="width: 100%; border-radius: 6px; display: block; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">` : 
+                                `<div style="padding: 3rem; text-align: center; color: var(--text-secondary);"><i class="fas fa-image" style="font-size: 2rem; display: block; margin-bottom: 1rem; opacity: 0.3;"></i>No Image Available</div>`
+                            }
+                        </div>
+                    `;
+                    
+                    window.openModal('Project Detail', content, null);
+                    const saveBtn = document.getElementById('saveModal');
+                    if (saveBtn) saveBtn.style.display = 'none';
                 });
             });
 
@@ -859,15 +871,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.addEventListener('click', () => {
                     const id = btn.getAttribute('data-id');
                     const item = data.find((resume) => String(resume.id) === String(id));
-                    openDetailModal('Resume Detail', {
-                        Title: item.title,
-                        Summary: item.summary,
-                        Status: item.is_active ? 'Active' : 'Inactive',
-                        File: `<a href="${item.file_url}" target="_blank" style="color: var(--blue-accent);">${item.file_name}</a>`,
-                        Size: formatFileSize(item.file_size),
-                        Updated: formatAdminDate(item.updated_at || item.created_at),
-                        Preview: item.preview_image_url ? `<img src="${item.preview_image_url}" style="width: 100%; max-height: 200px; object-fit: contain; border-radius: 8px; margin-top: 0.5rem;">` : 'No Preview'
-                    });
+                    
+                    const statusClass = item.is_active ? 'is-active' : '';
+                    const statusText = item.is_active ? 'Active' : 'Inactive';
+                    
+                    const content = `
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; gap: 1rem;">
+                            <div style="flex: 1;">
+                                <label style="display: block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--blue-accent); margin-bottom: 0.4rem; letter-spacing: 0.05em;">Resume Title</label>
+                                <div style="font-size: 1.1rem; font-weight: 600; color: var(--text-primary); line-height: 1.3;">${item.title}</div>
+                            </div>
+                            <div style="text-align: right; min-width: 80px;">
+                                <label style="display: block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--blue-accent); margin-bottom: 0.4rem; letter-spacing: 0.05em;">Status</label>
+                                <span class="status-pill ${statusClass}" style="display: inline-block;">${statusText}</span>
+                            </div>
+                        </div>
+                        <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 12px; border: 1px solid var(--border);">
+                            ${item.preview_image_url ? 
+                                `<img src="${item.preview_image_url}" style="width: 100%; border-radius: 6px; display: block; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">` : 
+                                `<div style="padding: 3rem; text-align: center; color: var(--text-secondary);"><i class="fas fa-image" style="font-size: 2rem; display: block; margin-bottom: 1rem; opacity: 0.3;"></i>No Preview Available</div>`
+                            }
+                        </div>
+                    `;
+                    
+                    window.openModal('Resume Detail', content, null);
+                    const saveBtn = document.getElementById('saveModal');
+                    if (saveBtn) saveBtn.style.display = 'none';
                 });
             });
 
@@ -1407,11 +1436,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (filteredData.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-secondary);">${skillSearchTerm ? 'No matching side skills found.' : 'No side skills found.'}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="2" style="text-align: center; padding: 2rem; color: var(--text-secondary);">${skillSearchTerm ? 'No matching side skills found.' : 'No side skills found.'}</td></tr>`;
                 return;
             }
 
-            tbody.innerHTML = paginatedData.map(skill => `
+            tbody.innerHTML = filteredData.map(skill => `
                 <tr>
                     <td><i class="${skill.icon}" style="margin-right: 1rem; width: 20px;"></i> <strong>${skill.text}</strong></td>
                     <td>
@@ -2660,6 +2689,14 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        const statusFilter = document.getElementById('appStatusFilter');
+        if (statusFilter) {
+            statusFilter.addEventListener('change', () => {
+                currentApplicationsPage = 1;
+                renderApplications();
+            });
+        }
+
         await renderApplications();
     };
 
@@ -2677,6 +2714,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // Apply filters
             if (appSearchTerm) {
                 query = query.or(`company.ilike.%${appSearchTerm}%,position.ilike.%${appSearchTerm}%,location.ilike.%${appSearchTerm}%`);
+            }
+
+            if (statusFilter && statusFilter.value !== 'all') {
+                query = query.eq('status', statusFilter.value);
             }
 
             const { data, count, error } = await query
