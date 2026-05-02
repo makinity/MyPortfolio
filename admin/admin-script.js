@@ -2818,7 +2818,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.error('Logout error:', error);
                     showToast('Logout failed', true);
                 } else {
-                    window.location.href = 'login.html';
+                    window.location.href = 'login/';
                 }
             }
         });

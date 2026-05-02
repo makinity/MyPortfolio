@@ -10,6 +10,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
         // No active session – redirect to login page
-        window.location.href = 'login.html';
+        window.location.href = 'login/';
     }
 });
