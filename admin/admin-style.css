@@ -359,10 +359,17 @@ body {
     .page-header {
         flex-direction: column-reverse;
         align-items: stretch;
+        gap: 1rem;
     }
     
     .search-container {
         max-width: 100%;
+        width: 100%;
+    }
+
+    .header-actions {
+        justify-content: flex-end;
+        width: 100%;
     }
 }
 

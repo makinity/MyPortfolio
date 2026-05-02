@@ -580,12 +580,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 return `
                     <tr>
-                        <td><img src="${displayUrl}" style="width: 50px; height: 30px; object-fit: cover; border-radius: 4px; background: #1e293b;" onerror="this.src='../assets/images/gallery/placeholder.jpg'"></td>
                         <td><strong>${project.title}</strong></td>
-                        <td>${Array.isArray(project.tags) ? project.tags.join(', ') : (project.tags || '')}</td>
-                        <td>${project.sort_order}</td>
                         <td>
                             <div class="action-btns">
+                                <button class="btn-icon view-project" data-id="${project.id}" title="View Details"><i class="fas fa-eye"></i></button>
                                 <button class="btn-icon edit-project" data-id="${project.id}" title="Edit"><i class="fas fa-edit"></i></button>
                                 <button class="btn-icon delete delete-project" data-id="${project.id}" title="Delete"><i class="fas fa-trash"></i></button>
                             </div>
@@ -622,6 +620,22 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('nextProjects')?.addEventListener('click', () => initProjectsPage(currentProjectsPage + 1));
 
             // Listeners
+            tbody.querySelectorAll('.view-project').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-id');
+                    const item = data.find(p => String(p.id) === String(id));
+                    openDetailModal('Project Detail', {
+                        Title: item.title,
+                        Description: item.description,
+                        Tags: item.tags ? item.tags.join(', ') : '—',
+                        Sort_Order: item.sort_order,
+                        Repository: item.repo_link ? `<a href="${item.repo_link}" target="_blank" style="color: var(--blue-accent);">${item.repo_link}</a>` : '—',
+                        Demo: item.demo_link ? `<a href="${item.demo_link}" target="_blank" style="color: var(--blue-accent);">${item.demo_link}</a>` : '—',
+                        Image: item.image_url ? `<img src="${item.image_url}" style="width: 100%; max-height: 200px; object-fit: contain; border-radius: 8px; margin-top: 0.5rem;">` : '—'
+                    });
+                });
+            });
+
             tbody.querySelectorAll('.edit-project').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const id = btn.getAttribute('data-id');
@@ -814,7 +828,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (filteredData.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-secondary);">${resumeSearchTerm ? 'No matching resumes found.' : 'No resumes uploaded yet.'}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="2" style="text-align: center; padding: 2rem; color: var(--text-secondary);">${resumeSearchTerm ? 'No matching resumes found.' : 'No resumes uploaded yet.'}</td></tr>`;
                 return;
             }
 
@@ -826,30 +840,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 return `
                 <tr>
-                    <td>${renderAdminResumeThumb(item.preview_image_url)}</td>
                     <td>
                         <strong>${safeTitle}</strong>
-                        <div style="margin-top: 0.35rem; color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5;">
-                            ${safeSummary}
-                        </div>
                     </td>
-                    <td>
-                        <span class="status-pill${item.is_active ? ' is-active' : ''}">
-                            ${item.is_active ? 'Active' : 'Inactive'}
-                        </span>
-                    </td>
-                    <td>
-                        <a href="${safeFileUrl}" target="_blank" rel="noopener noreferrer" class="admin-inline-link">
-                            ${safeFileName}
-                        </a>
-                        <div style="margin-top: 0.35rem; color: var(--text-secondary); font-size: 0.85rem;">
-                            ${formatFileSize(item.file_size)}
-                        </div>
-                    </td>
-                    <td>${formatAdminDate(item.updated_at || item.created_at)}</td>
                     <td>
                         <div class="action-btns">
-                            <button class="btn-icon view-resume" data-id="${item.id}" title="View"><i class="fas fa-eye"></i></button>
+                            <button class="btn-icon view-resume" data-id="${item.id}" title="View Details"><i class="fas fa-eye"></i></button>
                             <button class="btn-icon edit-resume" data-id="${item.id}" title="Edit"><i class="fas fa-edit"></i></button>
                             <button class="btn-icon activate-resume" data-id="${item.id}" ${item.is_active ? 'disabled' : ''} title="${item.is_active ? 'Already active' : 'Set active'}"><i class="fas fa-circle-check"></i></button>
                             <button class="btn-icon delete delete-resume" data-id="${item.id}" title="Delete"><i class="fas fa-trash"></i></button>
@@ -863,9 +859,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.addEventListener('click', () => {
                     const id = btn.getAttribute('data-id');
                     const item = data.find((resume) => String(resume.id) === String(id));
-                    if (item?.file_url) {
-                        window.open(item.file_url, '_blank', 'noopener,noreferrer');
-                    }
+                    openDetailModal('Resume Detail', {
+                        Title: item.title,
+                        Summary: item.summary,
+                        Status: item.is_active ? 'Active' : 'Inactive',
+                        File: `<a href="${item.file_url}" target="_blank" style="color: var(--blue-accent);">${item.file_name}</a>`,
+                        Size: formatFileSize(item.file_size),
+                        Updated: formatAdminDate(item.updated_at || item.created_at),
+                        Preview: item.preview_image_url ? `<img src="${item.preview_image_url}" style="width: 100%; max-height: 200px; object-fit: contain; border-radius: 8px; margin-top: 0.5rem;">` : 'No Preview'
+                    });
                 });
             });
 
@@ -900,7 +902,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         } catch (error) {
             console.error('Render resumes error:', error);
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--danger);">Failed to load resumes.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="2" style="text-align: center; padding: 2rem; color: var(--danger);">Failed to load resumes.</td></tr>';
             showToast('Failed to load resumes', true);
         }
     };
@@ -1212,10 +1214,9 @@ document.addEventListener('DOMContentLoaded', () => {
             tbody.innerHTML = paginatedData.map(tech => `
                 <tr>
                     <td><i class="${tech.icon_url}" style="margin-right: 1rem; width: 20px;"></i> <strong>${tech.name}</strong></td>
-                    <td><code>${tech.icon_url}</code></td>
-                    <td>${tech.sort_order}</td>
                     <td>
                         <div class="action-btns">
+                            <button class="btn-icon view-tech" data-id="${tech.id}" title="View Details"><i class="fas fa-eye"></i></button>
                             <button class="btn-icon edit-tech" data-id="${tech.id}" title="Edit"><i class="fas fa-edit"></i></button>
                             <button class="btn-icon delete delete-tech" data-id="${tech.id}" data-name="${tech.name}" title="Delete"><i class="fas fa-trash"></i></button>
                         </div>
@@ -1251,6 +1252,18 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('nextTech')?.addEventListener('click', () => initTechStackPage(currentTechPage + 1));
 
             // Listeners
+            tbody.querySelectorAll('.view-tech').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-id');
+                    const item = data.find(t => String(t.id) === String(id));
+                    openDetailModal('Tech Detail', {
+                        Name: item.name,
+                        Icon_Class: item.icon_url,
+                        Sort_Order: item.sort_order
+                    });
+                });
+            });
+
             tbody.querySelectorAll('.edit-tech').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const id = btn.getAttribute('data-id');
@@ -1398,13 +1411,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            tbody.innerHTML = data.map(skill => `
+            tbody.innerHTML = paginatedData.map(skill => `
                 <tr>
                     <td><i class="${skill.icon}" style="margin-right: 1rem; width: 20px;"></i> <strong>${skill.text}</strong></td>
-                    <td><code>${skill.icon}</code></td>
-                    <td>${skill.sort_order}</td>
                     <td>
                         <div class="action-btns">
+                            <button class="btn-icon view-sideskill" data-id="${skill.id}" title="View Details"><i class="fas fa-eye"></i></button>
                             <button class="btn-icon edit-sideskill" data-id="${skill.id}" title="Edit"><i class="fas fa-edit"></i></button>
                             <button class="btn-icon delete delete-side-skill" data-id="${skill.id}" data-text="${skill.text}" title="Delete"><i class="fas fa-trash"></i></button>
                         </div>
@@ -1413,6 +1425,18 @@ document.addEventListener('DOMContentLoaded', () => {
             `).join('');
 
             // Listeners
+            tbody.querySelectorAll('.view-sideskill').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-id');
+                    const item = data.find(s => String(s.id) === String(id));
+                    openDetailModal('Skill Detail', {
+                        Text: item.text,
+                        Icon_Class: item.icon,
+                        Sort_Order: item.sort_order
+                    });
+                });
+            });
+
             tbody.querySelectorAll('.edit-sideskill').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const id = btn.getAttribute('data-id');
@@ -2018,13 +2042,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            tbody.innerHTML = data.map(link => `
+            tbody.innerHTML = filteredData.map(link => `
                 <tr>
                     <td><i class="${link.icon_class || ''}" style="margin-right: 1rem; width: 20px;"></i> <strong>${link.platform || 'Social Link'}</strong></td>
-                    <td><a href="${link.url}" target="_blank" style="color: var(--blue-primary);">${link.url}</a></td>
-                    <td>${link.sort_order}</td>
                     <td>
                         <div class="action-btns">
+                            <button class="btn-icon view-social" data-id="${link.id}" title="View Details"><i class="fas fa-eye"></i></button>
                             <button class="btn-icon edit-social" data-id="${link.id}" title="Edit"><i class="fas fa-edit"></i></button>
                             <button class="btn-icon delete delete-social" data-id="${link.id}" data-name="${link.platform || 'Social Link'}" title="Delete"><i class="fas fa-trash"></i></button>
                         </div>
@@ -2033,6 +2056,19 @@ document.addEventListener('DOMContentLoaded', () => {
             `).join('');
 
             // Listeners
+            tbody.querySelectorAll('.view-social').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-id');
+                    const item = data.find(s => String(s.id) === String(id));
+                    openDetailModal('Social Link Detail', {
+                        Platform: item.platform,
+                        URL: item.url,
+                        Icon_Class: item.icon_class,
+                        Sort_Order: item.sort_order
+                    });
+                });
+            });
+
             tbody.querySelectorAll('.edit-social').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const id = btn.getAttribute('data-id');
@@ -2194,6 +2230,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.closeModal = function() {
         if (adminModal) adminModal.classList.remove('show');
+    };
+
+    const openDetailModal = (title, details) => {
+        const content = `
+            <div class="detail-view" style="padding: 0.5rem;">
+                ${Object.entries(details).map(([key, value]) => `
+                    <div style="margin-bottom: 1.25rem;">
+                        <label style="display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--blue-accent); margin-bottom: 0.25rem;">${key.replace(/_/g, ' ')}</label>
+                        <div style="color: var(--text-primary); font-size: 0.95rem; line-height: 1.5; word-break: break-word;">${value || '<span style="opacity: 0.5;">—</span>'}</div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        window.openModal(title, content, null);
+        
+        // Hide the save button since it's read-only
+        const saveBtn = document.getElementById('saveModal');
+        if (saveBtn) saveBtn.style.display = 'none';
     };
 
     if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
@@ -2465,13 +2519,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            tbody.innerHTML = data.map(item => `
+            tbody.innerHTML = filteredData.map(item => `
                 <tr>
                     <td><i class="${item.icon}" style="color: var(--blue-primary); width: 20px;"></i> ${item.text}</td>
-                    <td><code>${item.icon}</code></td>
-                    <td>${item.sort_order}</td>
                     <td>
                         <div class="action-btns">
+                            <button class="btn-icon view-fact" data-id="${item.id}" title="View Details"><i class="fas fa-eye"></i></button>
                             <button class="btn-icon edit-fact" data-id="${item.id}" title="Edit"><i class="fas fa-edit"></i></button>
                             <button class="btn-icon delete delete-fact" data-id="${item.id}" data-text="${item.text}" title="Delete"><i class="fas fa-trash"></i></button>
                         </div>
@@ -2480,6 +2533,18 @@ document.addEventListener('DOMContentLoaded', () => {
             `).join('');
 
             // Listeners
+            tbody.querySelectorAll('.view-fact').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-id');
+                    const item = data.find(f => String(f.id) === String(id));
+                    openDetailModal('Fact Detail', {
+                        Text: item.text,
+                        Icon_Class: item.icon,
+                        Sort_Order: item.sort_order
+                    });
+                });
+            });
+
             tbody.querySelectorAll('.edit-fact').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const id = btn.getAttribute('data-id');
@@ -2632,11 +2697,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td><strong>${escapeHtml(app.company)}</strong></td>
                     <td>${escapeHtml(app.position)}</td>
                     <td>
-                        <span class="status-pill ${app.status.toLowerCase()}">${app.status}</span>
-                    </td>
-                    <td>${formatAdminDate(app.date_applied)}</td>
-                    <td>
                         <div class="action-btns">
+                            <button class="btn-icon view-app" data-id="${app.id}" title="View Details"><i class="fas fa-eye"></i></button>
                             <button class="btn-icon ai-tailor-app" data-id="${app.id}" title="AI Resume Tailor"><i class="fas fa-wand-magic-sparkles"></i></button>
                             <button class="btn-icon edit-app" data-id="${app.id}" title="Edit"><i class="fas fa-edit"></i></button>
                             <button class="btn-icon delete-app" data-id="${app.id}" title="Delete"><i class="fas fa-trash"></i></button>
@@ -2670,6 +2732,22 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Listeners
+            tbody.querySelectorAll('.view-app').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-id');
+                    const item = data.find(a => String(a.id) === String(id));
+                    openDetailModal('Application Detail', {
+                        Company: item.company,
+                        Position: item.position,
+                        Status: item.status,
+                        Date_Applied: formatAdminDate(item.date_applied),
+                        Location: item.location,
+                        Link: item.link ? `<a href="${item.link}" target="_blank" style="color: var(--blue-accent);">${item.link}</a>` : '—',
+                        Notes: item.notes
+                    });
+                });
+            });
+
             tbody.querySelectorAll('.edit-app').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const id = btn.getAttribute('data-id');
