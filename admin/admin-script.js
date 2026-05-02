@@ -577,6 +577,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (displayUrl.includes('assets/')) {
                         let cleanPath = displayUrl.startsWith('/') ? displayUrl.substring(1) : displayUrl;
                         displayUrl = cleanPath.startsWith('assets/') ? '../' + cleanPath : '../assets/' + cleanPath;
+                    } else {
+                        // Assume it's a Supabase Storage path in the 'Gallery' bucket
+                        const { data: urlData } = window.supabase.storage.from('Gallery').getPublicUrl(displayUrl);
+                        if (urlData) displayUrl = urlData.publicUrl;
                     }
                 }
 
@@ -629,10 +633,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     let displayUrl = item.image_url || '';
                     if (displayUrl && !displayUrl.startsWith('http') && !displayUrl.startsWith('blob:') && !displayUrl.startsWith('data:')) {
-                        // Only fix path if it's explicitly a local asset path
                         if (displayUrl.includes('assets/')) {
+                            // Local Asset
                             let cleanPath = displayUrl.startsWith('/') ? displayUrl.substring(1) : displayUrl;
                             displayUrl = cleanPath.startsWith('assets/') ? '../' + cleanPath : '../assets/' + cleanPath;
+                        } else {
+                            // Assume it's a Supabase Storage path in the 'Gallery' bucket
+                            const { data: urlData } = window.supabase.storage.from('Gallery').getPublicUrl(displayUrl);
+                            if (urlData) displayUrl = urlData.publicUrl;
                         }
                     }
                     
