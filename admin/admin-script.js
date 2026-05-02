@@ -2796,15 +2796,54 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.addEventListener('click', () => {
                     const id = btn.getAttribute('data-id');
                     const item = data.find(a => String(a.id) === String(id));
-                    openDetailModal('Application Detail', {
-                        Company: item.company,
-                        Position: item.position,
-                        Status: item.status,
-                        Date_Applied: formatAdminDate(item.date_applied),
-                        Location: item.location,
-                        Link: item.link ? `<a href="${item.link}" target="_blank" style="color: var(--blue-accent);">${item.link}</a>` : '—',
-                        Notes: item.notes
-                    });
+                    
+                    const statusClass = item.status ? item.status.toLowerCase() : '';
+                    
+                    const content = `
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                            <div>
+                                <label style="display: block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--blue-accent); margin-bottom: 0.4rem; letter-spacing: 0.05em;">Company</label>
+                                <div style="font-size: 1.1rem; font-weight: 600; color: var(--text-primary);">${item.company}</div>
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--blue-accent); margin-bottom: 0.4rem; letter-spacing: 0.05em;">Position</label>
+                                <div style="font-size: 1.1rem; font-weight: 600; color: var(--text-primary);">${item.position}</div>
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                            <div>
+                                <label style="display: block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--blue-accent); margin-bottom: 0.4rem; letter-spacing: 0.05em;">Status</label>
+                                <span class="status-pill ${statusClass}" style="display: inline-block;">${item.status}</span>
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--blue-accent); margin-bottom: 0.4rem; letter-spacing: 0.05em;">Date Applied</label>
+                                <div style="color: var(--text-primary); font-size: 0.95rem;">${formatAdminDate(item.date_applied)}</div>
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                            <div>
+                                <label style="display: block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--blue-accent); margin-bottom: 0.4rem; letter-spacing: 0.05em;">Location</label>
+                                <div style="color: var(--text-primary); font-size: 0.95rem;">${item.location || '—'}</div>
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--blue-accent); margin-bottom: 0.4rem; letter-spacing: 0.05em;">Listing Link</label>
+                                <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    ${item.link ? `<a href="${item.link}" target="_blank" style="color: var(--blue-accent); text-decoration: none; font-size: 0.95rem;"><i class="fas fa-external-link-alt" style="font-size: 0.8rem; margin-right: 0.4rem;"></i>Visit Listing</a>` : '—'}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="background: rgba(255,255,255,0.03); padding: 1.25rem; border-radius: 12px; border: 1px solid var(--border);">
+                            <label style="display: block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--blue-accent); margin-bottom: 0.75rem; letter-spacing: 0.05em;">Application Notes</label>
+                            <div style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.7; white-space: pre-wrap;">${item.notes || 'No notes added for this application.'}</div>
+                        </div>
+                    `;
+                    
+                    window.openModal('Application Detail', content, null);
+                    const saveBtn = document.getElementById('saveModal');
+                    if (saveBtn) saveBtn.style.display = 'none';
                 });
             });
 
