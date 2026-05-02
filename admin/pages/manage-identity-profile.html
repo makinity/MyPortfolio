@@ -4,41 +4,58 @@
 
 <div class="card">
     <form id="profileForm">
-        <div class="form-row">
-            <div class="form-group">
-                <label>Full Name</label>
-                <input type="text" id="profFullName" placeholder="e.g. Mark Vencent L. Juntilla">
+        <div style="display: flex; gap: 2.5rem; flex-wrap: wrap; margin-bottom: 2rem;">
+            <!-- Profile Image Preview Section -->
+            <div style="flex: 0 0 auto; text-align: center;">
+                <div class="profile-preview-container">
+                    <img id="profPreview" src="../assets/images/profile/1.jpg" alt="Profile Preview">
+                    <div class="preview-overlay">
+                        <i class="fas fa-camera"></i>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top: 1rem; margin-bottom: 0;">
+                    <label class="btn btn-primary btn-sm" for="profFile" style="cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; width: auto; padding: 0.5rem 1.25rem;">
+                        <i class="fas fa-upload"></i> Change Photo
+                    </label>
+                    <input type="file" id="profFile" accept="image/*" style="display: none;">
+                    <p id="currentImageName" style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.5rem; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></p>
+                </div>
             </div>
-            <div class="form-group">
-                <label>Role</label>
-                <input type="text" id="profRole" placeholder="e.g. Full Stack Developer">
-            </div>
-            <div class="form-group">
-                <label>Location</label>
-                <input type="text" id="profLocation" placeholder="e.g. Davao del Sur, Philippines">
-            </div>
-            <div class="form-group">
-                <label>Profile Image</label>
-                <input type="file" id="profFile" accept="image/*">
-                <p id="currentImageName" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.5rem;"></p>
+
+            <!-- Basic Info Section -->
+            <div style="flex: 1; min-width: 300px;">
+                <div class="form-row" style="grid-template-columns: 1fr 1fr; margin-bottom: 1.5rem;">
+                    <div class="form-group">
+                        <label><i class="fas fa-user" style="margin-right: 0.5rem; color: var(--blue-accent);"></i>Full Name</label>
+                        <input type="text" id="profFullName" placeholder="e.g. Mark Vencent L. Juntilla">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-briefcase" style="margin-right: 0.5rem; color: var(--blue-accent);"></i>Role</label>
+                        <input type="text" id="profRole" placeholder="e.g. Full Stack Developer">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-map-marker-alt" style="margin-right: 0.5rem; color: var(--blue-accent);"></i>Location</label>
+                    <input type="text" id="profLocation" placeholder="e.g. Davao del Sur, Philippines">
+                </div>
             </div>
         </div>
 
-        <div class="form-group">
-            <label>About Me (Primary Paragraph)</label>
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+            <label><i class="fas fa-quote-left" style="margin-right: 0.5rem; color: var(--blue-accent);"></i>About Me (Primary Paragraph)</label>
             <textarea id="profAboutPrimary" rows="4" placeholder="Briefly describe yourself..."></textarea>
         </div>
 
-        <div class="form-group">
-            <label>About Me (Secondary Paragraph)</label>
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+            <label><i class="fas fa-pencil-alt" style="margin-right: 0.5rem; color: var(--blue-accent);"></i>About Me (Secondary Paragraph)</label>
             <textarea id="profAboutSecondary" rows="4" placeholder="Additional details about your journey..."></textarea>
         </div>
         
-        <div style="margin-top: 1rem; display: flex; justify-content: flex-end; gap: 1rem;">
-            <a href="https://portfolio-chat.makidevportfolio.workers.dev/auth/google" class="btn btn-primary" id="connectGmailBtn" style="width: auto; padding: 0.75rem 2rem; display: none;">
+        <div style="margin-top: 2rem; display: flex; justify-content: flex-end; gap: 1rem; align-items: center;">
+            <a href="https://portfolio-chat.makidevportfolio.workers.dev/auth/google" class="btn btn-primary" id="connectGmailBtn" style="width: auto; padding: 0.75rem 1.5rem; display: none; font-size: 0.9rem;">
                 <i class="fab fa-google"></i> Connect Gmail
             </a>
-            <button type="submit" class="btn btn-success" style="width: auto; padding: 0.75rem 2rem;">
+            <button type="submit" class="btn btn-success" style="width: auto; padding: 0.75rem 2rem; font-size: 0.9rem; font-weight: 600;">
                 <i class="fas fa-save"></i> Save Profile Details
             </button>
         </div>

@@ -1618,7 +1618,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.profile_image_url) {
                     const parts = data.profile_image_url.split('/');
                     document.getElementById('currentImageName').textContent = `Current: ${parts[parts.length - 1]}`;
+                    document.getElementById('profPreview').src = data.profile_image_url;
                 }
+
+                // Real-time preview for file selection
+                const fileInput = document.getElementById('profFile');
+                const previewImg = document.getElementById('profPreview');
+                fileInput.addEventListener('change', () => {
+                    const file = fileInput.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            previewImg.src = e.target.result;
+                        };
+                        reader.readAsDataURL(file);
+                        document.getElementById('currentImageName').textContent = `Selected: ${file.name}`;
+                    }
+                });
 
                 // Show connect button if gmail is not enabled
                 const connectBtn = document.getElementById('connectGmailBtn');
